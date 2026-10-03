@@ -62,8 +62,8 @@ textarea,
 [data-testid="stTextArea"] textarea,
 [data-testid="stDateInput"] input,
 [data-testid="stSelectbox"] [role="combobox"] {
-    background:#D1D5DB !important;
-    background-color:#D1D5DB !important;
+    background:#EEF2F6 !important;
+    background-color:#EEF2F6 !important;
     color:#102a52 !important;
     -webkit-text-fill-color:#102a52 !important;
 }
@@ -81,18 +81,18 @@ textarea,
 .item-card { border:1px solid var(--line); border-radius:16px; padding:18px; margin:12px 0; background:#fff; }
 .item-name { color:var(--navy); font-size:1.3rem; font-weight:700; margin-bottom:4px; }
 .item-meta { color:#667085; font-size:.95rem; margin-bottom:8px; }
-div.stButton > button { min-height:58px; border-radius:14px; font-size:1.05rem; font-weight:700; border:1px solid #b9bec7; background:#D1D5DB !important; color:#102a52 !important; }
-div.stButton > button p, div.stButton > button span { color:#102a52 !important; -webkit-text-fill-color:#102a52 !important; }
-div.stButton > button:hover { background:#c4c9d1 !important; border-color:#b9bec7 !important; color:#102a52 !important; }
+div.stButton > button { min-height:58px; border-radius:14px; font-size:1.05rem; font-weight:700; border:1px solid #102A52; background:#102A52 !important; color:#FFFFFF !important; }
+div.stButton > button p, div.stButton > button span { color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important; }
+div.stButton > button:hover { background:#183B6B !important; border-color:#183B6B !important; color:#FFFFFF !important; }
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
-div.stFormSubmitButton > button { background:#D1D5DB !important; color:#102a52 !important; border-color:#b9bec7 !important; min-height:48px; }
-div.stFormSubmitButton > button p, div.stFormSubmitButton > button span { color:#102a52 !important; -webkit-text-fill-color:#102a52 !important; }
+div.stFormSubmitButton > button { background:#102A52 !important; color:#FFFFFF !important; border-color:#102A52 !important; min-height:48px; }
+div.stFormSubmitButton > button p, div.stFormSubmitButton > button span { color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important; }
 
 /* SELECT BOXES — override Streamlit/BaseWeb dark-theme backgrounds at EVERY nested level. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"],
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background:#D1D5DB !important;
-    background-color:#D1D5DB !important;
+    background:#EEF2F6 !important;
+    background-color:#EEF2F6 !important;
     border-color:#b9bec7 !important;
     box-shadow:none !important;
 }
@@ -128,8 +128,8 @@ div[data-baseweb="popover"] [role="listbox"],
 div[data-baseweb="popover"] [role="option"],
 ul[role="listbox"],
 li[role="option"] {
-    background:#D1D5DB !important;
-    background-color:#D1D5DB !important;
+    background:#EEF2F6 !important;
+    background-color:#EEF2F6 !important;
 }
 
 div[data-baseweb="popover"] [role="option"] *,
@@ -155,8 +155,8 @@ li[role="option"][aria-selected="true"] {
 .stApp input,
 .stApp textarea,
 .stApp [role="combobox"] {
-    background:#D1D5DB !important;
-    background-color:#D1D5DB !important;
+    background:#EEF2F6 !important;
+    background-color:#EEF2F6 !important;
     color:#102a52 !important;
     -webkit-text-fill-color:#102a52 !important;
 }
@@ -183,8 +183,8 @@ li[role="option"][aria-selected="true"] {
 [data-testid="stFileUploader"] section,
 [data-testid="stFileUploader"] section > div,
 [data-testid="stFileUploader"] button {
-    background: #D1D5DB !important;
-    background-color: #D1D5DB !important;
+    background: #EEF2F6 !important;
+    background-color: #EEF2F6 !important;
     color: #102A52 !important;
     -webkit-text-fill-color: #102A52 !important;
 }
@@ -201,9 +201,22 @@ li[role="option"][aria-selected="true"] {
 [data-baseweb="popover"] div,
 [data-baseweb="popover"] ul,
 [data-baseweb="popover"] li {
-    background-color: #D1D5DB !important;
+    background-color: #EEF2F6 !important;
     color: #102A52 !important;
     -webkit-text-fill-color: #102A52 !important;
+}
+
+/* COLOR BALANCE: keep the upload area neutral grey while form fields use blue-grey. */
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stFileUploaderDropzone"] > div,
+[data-testid="stFileUploaderDropzone"] section,
+[data-testid="stFileUploader"] section,
+[data-testid="stFileUploader"] section > div,
+[data-testid="stFileUploader"] button {
+    background:#D1D5DB !important;
+    background-color:#D1D5DB !important;
+    color:#102A52 !important;
+    -webkit-text-fill-color:#102A52 !important;
 }
 
 </style>
