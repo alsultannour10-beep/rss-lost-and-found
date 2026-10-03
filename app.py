@@ -63,7 +63,7 @@ div.stFormSubmitButton > button { background:var(--navy); color:white; border-co
 /* SELECT BOXES: make the CLOSED field behave like the Item name text field.
    Light background + navy selected text, so the value is always readable after clicking. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background-color:#f3f4f6 !important;
+    background-color:#d1d5db !important;
     border:1px solid #d5d9df !important;
     box-shadow:none !important;
 }
@@ -89,7 +89,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] > div svg * {
 /* OPEN menu: light grey choices with navy text. */
 div[data-baseweb="popover"] [role="listbox"],
 div[data-baseweb="popover"] [role="option"] {
-    background-color:#f3f4f6 !important;
+    background-color:#d1d5db !important;
 }
 div[data-baseweb="popover"] [role="option"],
 div[data-baseweb="popover"] [role="option"] * {
@@ -100,7 +100,7 @@ div[data-baseweb="popover"] [role="option"] * {
 /* Keep hovered/selected menu choices light grey too. */
 div[data-baseweb="popover"] [role="option"]:hover,
 div[data-baseweb="popover"] [role="option"][aria-selected="true"] {
-    background-color:#e5e7eb !important;
+    background-color:#d1d5db !important;
 }
 </style>
 """, unsafe_allow_html=True)
