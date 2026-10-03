@@ -60,29 +60,41 @@ div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#f
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
 div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
 
-/* SELECT BOXES: deliberately light grey with navy text. */
+/* SELECT BOXES: navy background with white text, including the value AFTER selection. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:hover,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within {
-    background-color:#e5e7eb !important;
-    background:#e5e7eb !important;
-    border-color:#c4c9d1 !important;
+    background:#102a52 !important;
+    background-color:#102a52 !important;
+    border-color:#102a52 !important;
     box-shadow:none !important;
 }
+
+/* Force the CLOSED select's chosen value to stay white. */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] input {
-    color:#102a52 !important;
-    -webkit-text-fill-color:#102a52 !important;
+div[data-testid="stSelectbox"] div[data-baseweb="select"] span,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] input,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] [class] {
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
+    opacity:1 !important;
 }
 div[data-testid="stSelectbox"] div[data-baseweb="select"] svg {
-    color:#102a52 !important;
-    fill:#102a52 !important;
+    color:#ffffff !important;
+    fill:#ffffff !important;
 }
-div[data-baseweb="popover"] [role="listbox"] { background:#fff !important; }
+
+/* Keep every choice in the OPEN menu navy with white text. */
+div[data-baseweb="popover"] [role="listbox"],
+div[data-baseweb="popover"] [role="option"] {
+    background:#102a52 !important;
+    background-color:#102a52 !important;
+}
 div[data-baseweb="popover"] [role="option"],
 div[data-baseweb="popover"] [role="option"] * {
-    color:#102a52 !important;
-    -webkit-text-fill-color:#102a52 !important;
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
 }
 </style>
 """, unsafe_allow_html=True)
