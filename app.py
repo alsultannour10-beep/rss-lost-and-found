@@ -60,47 +60,63 @@ div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#f
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
 div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
 
-/* SELECT BOXES: make the CLOSED field behave like the Item name text field.
-   Light background + navy selected text, so the value is always readable after clicking. */
+/* SELECT BOXES — override Streamlit/BaseWeb dark-theme backgrounds at EVERY nested level. */
+div[data-testid="stSelectbox"] div[data-baseweb="select"],
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    background:#D1D5DB !important;
     background-color:#D1D5DB !important;
-    border:1px solid #d5d9df !important;
+    border-color:#b9bec7 !important;
     box-shadow:none !important;
 }
 
-/* Selected/default value in the CLOSED select box. */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
+/* Force every nested select layer transparent so the grey parent always shows after interaction. */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"] {
+    background:transparent !important;
+    background-color:transparent !important;
+}
+
+div[data-testid="stSelectbox"] div[data-baseweb="select"] *,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] input {
     color:#102a52 !important;
     -webkit-text-fill-color:#102a52 !important;
-    text-shadow:none !important;
     opacity:1 !important;
     caret-color:#102a52 !important;
 }
 
-/* Closed-box arrow. */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div svg,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div svg * {
+div[data-testid="stSelectbox"] div[data-baseweb="select"] svg,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] svg * {
     color:#102a52 !important;
     fill:#102a52 !important;
     stroke:#102a52 !important;
 }
 
-/* OPEN menu: light grey choices with navy text. */
+/* OPEN DROPDOWN — also remove Streamlit's dark popup background. */
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] > div,
+div[data-baseweb="popover"] ul,
 div[data-baseweb="popover"] [role="listbox"],
-div[data-baseweb="popover"] [role="option"] {
+div[data-baseweb="popover"] [role="option"],
+ul[role="listbox"],
+li[role="option"] {
+    background:#D1D5DB !important;
     background-color:#D1D5DB !important;
 }
-div[data-baseweb="popover"] [role="option"],
-div[data-baseweb="popover"] [role="option"] * {
+
+div[data-baseweb="popover"] [role="option"] *,
+ul[role="listbox"] *,
+li[role="option"] * {
     color:#102a52 !important;
     -webkit-text-fill-color:#102a52 !important;
-    text-shadow:none !important;
 }
-/* Keep hovered/selected menu choices light grey too. */
+
 div[data-baseweb="popover"] [role="option"]:hover,
-div[data-baseweb="popover"] [role="option"][aria-selected="true"] {
-    background-color:#D1D5DB !important;
+div[data-baseweb="popover"] [role="option"][aria-selected="true"],
+li[role="option"]:hover,
+li[role="option"][aria-selected="true"] {
+    background:#c4c9d1 !important;
+    background-color:#c4c9d1 !important;
 }
 </style>
 """, unsafe_allow_html=True)
