@@ -234,8 +234,7 @@ def load_reports():
         if column not in df.columns:
             df[column] = ""
 
-    # Remove the old demonstration record from the visible dataset.
-    # This targets only: water bottle / Girls Building / 11k / yellow owl.
+    # Remove the old water-bottle demonstration record from the visible dataset.
     item = df["ItemName"].astype(str).str.strip().str.lower()
     building = df["Building"].astype(str).str.strip().str.lower()
     location = df["Location"].astype(str).str.strip().str.lower()
@@ -245,7 +244,6 @@ def load_reports():
         item.eq("water bottle")
         & building.eq("girls building")
         & (location.eq("11k") | class_name.eq("11k"))
-        & description.eq("yellow owl")
     )
     if legacy_test.any():
         df = df.loc[~legacy_test].copy()
@@ -427,8 +425,6 @@ elif st.session_state.page == "item_detail":
         else:
             st.markdown("### Contact the finder")
             st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
-    else:
-        st.info("This old test report has been removed from the contact view because it has no finder email.")
 
     if contact_email:
         st.markdown("### Item returned?")
