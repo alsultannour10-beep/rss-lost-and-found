@@ -46,34 +46,31 @@ div[data-testid="stMarkdownContainer"] > p,
     opacity:1 !important;
     font-weight:700 !important;
 }
-/* Typed text stays dark. Select boxes are navy, so their selected values must be white. */
+/* Typed text stays dark. Select boxes use a light grey background for clear readability. */
 input, textarea {
     color:#172033 !important;
 }
 [data-baseweb="select"] > div,
 [data-baseweb="select"] [role="combobox"] {
-    background:var(--navy) !important;
-    color:#fff !important;
+    background:#eef0f3 !important;
+    color:#102a52 !important;
 }
 [data-baseweb="select"] [role="combobox"] *,
 [data-baseweb="select"] svg {
     color:#fff !important;
     fill:#fff !important;
 }
-/* Force the SELECTED value itself to white after a choice is made. */
+/* Selected value in category/dropdown boxes: navy text on light grey. */
 [data-baseweb="select"] > div > div,
 [data-baseweb="select"] > div > div > div,
 [data-baseweb="select"] > div > div > div > div,
 [data-baseweb="select"] div[class*="singleValue"],
 [data-baseweb="select"] div[class*="ValueContainer"],
-[data-baseweb="select"] div[class*="valueContainer"] {
-    color:#fff !important;
-    -webkit-text-fill-color:#fff !important;
-}
+[data-baseweb="select"] div[class*="valueContainer"],
 [data-baseweb="select"] > div > div span,
 [data-baseweb="select"] > div > div p {
-    color:#fff !important;
-    -webkit-text-fill-color:#fff !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
 }
 /* Dropdown menu itself remains easy to read after it opens. */
 [role="listbox"], [role="option"] {
@@ -102,15 +99,18 @@ div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#f
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
 div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
 
-/* Final override: selected text inside every navy Streamlit select box MUST be white. */
+/* Final override: all closed Streamlit select boxes are light grey with navy text. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"] {
+    background:#eef0f3 !important;
+    color:#102a52 !important;
+}
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"],
 div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"] *,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] p,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
-    color: white !important;
-    -webkit-text-fill-color: white !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
 }
 /* Keep the opened dropdown choices dark on white. */
 div[data-baseweb="popover"] [role="listbox"],
