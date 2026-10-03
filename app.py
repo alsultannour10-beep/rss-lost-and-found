@@ -60,6 +60,21 @@ input, textarea {
     color:#fff !important;
     fill:#fff !important;
 }
+/* Force the SELECTED value itself to white after a choice is made. */
+[data-baseweb="select"] > div > div,
+[data-baseweb="select"] > div > div > div,
+[data-baseweb="select"] > div > div > div > div,
+[data-baseweb="select"] div[class*="singleValue"],
+[data-baseweb="select"] div[class*="ValueContainer"],
+[data-baseweb="select"] div[class*="valueContainer"] {
+    color:#fff !important;
+    -webkit-text-fill-color:#fff !important;
+}
+[data-baseweb="select"] > div > div span,
+[data-baseweb="select"] > div > div p {
+    color:#fff !important;
+    -webkit-text-fill-color:#fff !important;
+}
 /* Dropdown menu itself remains easy to read after it opens. */
 [role="listbox"], [role="option"] {
     background:#fff !important;
