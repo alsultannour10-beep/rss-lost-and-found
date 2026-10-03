@@ -35,6 +35,21 @@ html, body, [class*="css"], .stApp, button, input, textarea, select, label, p, d
     font-family: "Times New Roman", Times, serif !important;
 }
 .stApp { background:#fff; color:#172033; }
+/* Keep every Streamlit form label readable on the white background. */
+[data-testid="stWidgetLabel"],
+[data-testid="stWidgetLabel"] p,
+[data-testid="stWidgetLabel"] label,
+div[data-testid="stMarkdownContainer"] > p,
+.stSelectbox label, .stTextInput label, .stTextArea label,
+.stDateInput label, .stFileUploader label, .stRadio label {
+    color:var(--navy) !important;
+    opacity:1 !important;
+    font-weight:700 !important;
+}
+/* Input/select text stays dark and visible. */
+input, textarea, [data-baseweb="select"] * {
+    color:#172033 !important;
+}
 .block-container { max-width:800px; padding-top:2rem; padding-bottom:3rem; }
 #MainMenu, footer, header { visibility:hidden; }
 .rss-header { text-align:center; margin-bottom:24px; }
