@@ -60,36 +60,33 @@ div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#f
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
 div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
 
-/* SELECT BOXES: keep the closed control navy. */
+/* SELECT BOXES: make the CLOSED field behave like the Item name text field.
+   Light background + navy selected text, so the value is always readable after clicking. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background-color:#102a52 !important;
-    border-color:#102a52 !important;
+    background-color:#f3f4f6 !important;
+    border:1px solid #d5d9df !important;
     box-shadow:none !important;
 }
 
-/* IMPORTANT: BaseWeb can repaint the selected value with its theme color after blur/rerun.
-   Make the real glyph fill transparent and draw the visible glyphs in white with text-shadow.
-   This keeps the selected value visibly white before, during, and AFTER clicking. */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div:first-child,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div:first-child *,
+/* Selected/default value in the CLOSED select box. */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
 div[data-testid="stSelectbox"] div[data-baseweb="select"] input {
-    color:transparent !important;
-    -webkit-text-fill-color:transparent !important;
-    text-shadow:0 0 0 #ffffff !important;
-    opacity:1 !important;
-    caret-color:#ffffff !important;
-}
-
-/* Arrow stays white. */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] svg,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] svg * {
-    color:#ffffff !important;
-    fill:#ffffff !important;
-    stroke:#ffffff !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
     text-shadow:none !important;
+    opacity:1 !important;
+    caret-color:#102a52 !important;
 }
 
-/* OPEN menu: navy choices with white text. */
+/* Closed-box arrow. */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div svg,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div svg * {
+    color:#102a52 !important;
+    fill:#102a52 !important;
+    stroke:#102a52 !important;
+}
+
+/* OPEN menu stays navy with white choices. */
 div[data-baseweb="popover"] [role="listbox"],
 div[data-baseweb="popover"] [role="option"] {
     background-color:#102a52 !important;
