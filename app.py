@@ -34,6 +34,15 @@ st.markdown("""
 html, body, [class*="css"], .stApp, button, input, textarea, select, label, p, div, span, h1, h2, h3 {
     font-family: "Times New Roman", Times, serif !important;
 }
+/* Keep Streamlit Material icons as icons. Without this, the upload icon renders as the word “upload”, creating “uploadUpload”. */
+span[data-testid="stIconMaterial"],
+span[class*="material-symbols"],
+.material-symbols-rounded,
+.material-symbols-outlined {
+    font-family: "Material Symbols Rounded", "Material Symbols Outlined" !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+}
 .stApp { background:#fff; color:#172033; }
 [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
 .stSelectbox label, .stTextInput label, .stTextArea label,
