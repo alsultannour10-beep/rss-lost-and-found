@@ -437,7 +437,7 @@ elif st.session_state.page == "item_detail":
                 st.session_state[confirm_key] = True
                 st.rerun()
         else:
-            st.warning("Are you sure this item has been returned to its owner?")
+            st.markdown('<div style="background:#D1D5DB; color:#FFFFFF; padding:0.85rem 1rem; border-radius:8px; font-weight:700; margin:0.5rem 0 1rem 0;">Are you sure this item has been returned to its owner?</div>', unsafe_allow_html=True)
             confirm_col, cancel_col = st.columns(2)
             with confirm_col:
                 if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
