@@ -35,51 +35,12 @@ html, body, [class*="css"], .stApp, button, input, textarea, select, label, p, d
     font-family: "Times New Roman", Times, serif !important;
 }
 .stApp { background:#fff; color:#172033; }
-/* Keep every Streamlit form label readable on the white background. */
-[data-testid="stWidgetLabel"],
-[data-testid="stWidgetLabel"] p,
-[data-testid="stWidgetLabel"] label,
-div[data-testid="stMarkdownContainer"] > p,
+[data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
 .stSelectbox label, .stTextInput label, .stTextArea label,
 .stDateInput label, .stFileUploader label, .stRadio label {
-    color:var(--navy) !important;
-    opacity:1 !important;
-    font-weight:700 !important;
+    color:var(--navy) !important; opacity:1 !important; font-weight:700 !important;
 }
-/* Typed text stays dark. Select boxes use a light grey background for clear readability. */
-input, textarea {
-    color:#172033 !important;
-}
-[data-baseweb="select"] > div,
-[data-baseweb="select"] [role="combobox"] {
-    background:#eef0f3 !important;
-    color:#102a52 !important;
-}
-[data-baseweb="select"] [role="combobox"] *,
-[data-baseweb="select"] svg {
-    color:#fff !important;
-    fill:#fff !important;
-}
-/* Selected value in category/dropdown boxes: navy text on light grey. */
-[data-baseweb="select"] > div > div,
-[data-baseweb="select"] > div > div > div,
-[data-baseweb="select"] > div > div > div > div,
-[data-baseweb="select"] div[class*="singleValue"],
-[data-baseweb="select"] div[class*="ValueContainer"],
-[data-baseweb="select"] div[class*="valueContainer"],
-[data-baseweb="select"] > div > div span,
-[data-baseweb="select"] > div > div p {
-    color:#102a52 !important;
-    -webkit-text-fill-color:#102a52 !important;
-}
-/* Dropdown menu itself remains easy to read after it opens. */
-[role="listbox"], [role="option"] {
-    background:#fff !important;
-    color:#172033 !important;
-}
-[role="option"] * {
-    color:#172033 !important;
-}
+input, textarea { color:#172033 !important; }
 .block-container { max-width:800px; padding-top:2rem; padding-bottom:3rem; }
 #MainMenu, footer, header { visibility:hidden; }
 .rss-header { text-align:center; margin-bottom:24px; }
@@ -99,52 +60,29 @@ div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#f
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
 div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
 
-/* Final override: all closed Streamlit select boxes are light grey with navy text. */
+/* SELECT BOXES: deliberately light grey with navy text. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"] {
-    background:#eef0f3 !important;
-    color:#102a52 !important;
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:hover,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within {
+    background-color:#e5e7eb !important;
+    background:#e5e7eb !important;
+    border-color:#c4c9d1 !important;
+    box-shadow:none !important;
 }
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"] *,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] p,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
+div[data-testid="stSelectbox"] div[data-baseweb="select"] input {
     color:#102a52 !important;
     -webkit-text-fill-color:#102a52 !important;
 }
-/* Keep the opened dropdown choices dark on white. */
-div[data-baseweb="popover"] [role="listbox"],
+div[data-testid="stSelectbox"] div[data-baseweb="select"] svg {
+    color:#102a52 !important;
+    fill:#102a52 !important;
+}
+div[data-baseweb="popover"] [role="listbox"] { background:#fff !important; }
 div[data-baseweb="popover"] [role="option"],
 div[data-baseweb="popover"] [role="option"] * {
-    color: #172033 !important;
-    -webkit-text-fill-color: #172033 !important;
-    background: white !important;
-}
-
-/* FINAL SELECTBOX OVERRIDE: light-grey box with navy selected text. */
-div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
-div[data-testid="stSelectbox"] [data-baseweb="select"] [role="combobox"] {
-    background-color: #e9ecef !important;
-    border-color: #cbd2da !important;
-}
-div[data-testid="stSelectbox"] [data-baseweb="select"] [role="combobox"] *,
-div[data-testid="stSelectbox"] [data-baseweb="select"] > div > div,
-div[data-testid="stSelectbox"] [data-baseweb="select"] p,
-div[data-testid="stSelectbox"] [data-baseweb="select"] span {
-    color: #102a52 !important;
-    -webkit-text-fill-color: #102a52 !important;
-}
-div[data-testid="stSelectbox"] [data-baseweb="select"] svg {
-    color: #102a52 !important;
-    fill: #102a52 !important;
-}
-/* Open dropdown: white menu with navy/dark text. */
-div[data-baseweb="popover"] [role="listbox"],
-div[data-baseweb="popover"] [role="option"],
-div[data-baseweb="popover"] [role="option"] * {
-    background-color: #ffffff !important;
-    color: #102a52 !important;
-    -webkit-text-fill-color: #102a52 !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
 }
 </style>
 """, unsafe_allow_html=True)
