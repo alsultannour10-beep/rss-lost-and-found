@@ -325,6 +325,7 @@ st.markdown(f"""
 <div class="rss-header">
     <img src="data:image/jpeg;base64,{LOGO_DATA}" style="max-width:220px;width:42%;height:auto;margin:0 auto 10px;display:block;">
     <div class="rss-title">Rawd Al Saleheen School Lost & Found</div>
+    <div style="margin-top:8px;color:#667085;font-size:15px;">Done by Nour O. Al Sultan</div>
 </div>
 """, unsafe_allow_html=True)
 
