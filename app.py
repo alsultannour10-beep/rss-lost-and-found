@@ -120,6 +120,21 @@ div[data-baseweb="popover"] [role="option"] * {
     -webkit-text-fill-color: #172033 !important;
     background: white !important;
 }
+
+/* HARD OVERRIDE: every glyph inside a CLOSED select box is white. */
+div[data-testid="stSelectbox"] [data-baseweb="select"] * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    fill: #ffffff !important;
+    caret-color: #ffffff !important;
+}
+/* Dropdown menu itself stays white with dark readable choices. */
+div[data-baseweb="popover"] [role="listbox"] *,
+div[data-baseweb="popover"] [role="option"] * {
+    color: #172033 !important;
+    -webkit-text-fill-color: #172033 !important;
+    fill: #172033 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
