@@ -475,45 +475,90 @@ elif st.session_state.page == "form":
     action = "lost" if report_type == "Lost" else "found"
     st.markdown(f'<div class="choice-title">Report a {report_type} Item</div>', unsafe_allow_html=True)
 
-    building = st.selectbox("Building *", BUILDINGS, help="Choose the school building where the item was lost or found.")
+    # Start with no preselected building/place so a shared link opens cleanly.
+    building = st.selectbox(
+        "Building *",
+        BUILDINGS,
+        index=None,
+        placeholder="Select a building",
+        help="Choose the school building where the item was lost or found.",
+    )
 
     grade_level = ""
     class_name = ""
-    if building in ["Girls Building", "Boys Building"]:
-        grade_level = st.selectbox("Grade Level *", GRADE_LEVELS)
-        if building == "Girls Building":
-            class_map = {
-                "High School": GIRLS_HIGH_SCHOOL,
-                "Middle School": GIRLS_MIDDLE_SCHOOL,
-                "Elementary School": GIRLS_ELEMENTARY,
-            }
-        else:
-            class_map = {
-                "High School": BOYS_HIGH_SCHOOL,
-                "Middle School": BOYS_MIDDLE_SCHOOL,
-                "Elementary School": BOYS_ELEMENTARY,
-            }
-        class_name = st.selectbox("Class *", class_map[grade_level])
+    location = ""
+    custom_location = ""
 
+    # Place comes directly after Building. Grade Level and Class only appear
+    # when Classroom is selected in the Girls or Boys building.
     if building == "Girls Building":
-        location_options = ["Classroom"] + GIRLS_SPECIAL_LOCATIONS
+        location_options = ["Classroom"] + GIRLS_SPECIAL_LOCATIONS + ["Other"]
     elif building == "Boys Building":
-        location_options = ["Classroom"] + BOYS_SPECIAL_LOCATIONS
+        location_options = ["Classroom"] + BOYS_SPECIAL_LOCATIONS + ["Other"]
+    elif building == "Administration Building":
+        location_options = ADMIN_LOCATIONS + ["Other"]
     else:
-        location_options = ADMIN_LOCATIONS
+        location_options = []
+
+    if building:
+        location_choice = st.selectbox(
+            "Place *",
+            location_options,
+            index=None,
+            placeholder="Select a place",
+            help="Choose the exact place where the item was lost or found.",
+        )
+
+        if location_choice == "Classroom" and building in ["Girls Building", "Boys Building"]:
+            grade_level = st.selectbox(
+                "Grade Level *",
+                GRADE_LEVELS,
+                index=None,
+                placeholder="Select a grade level",
+            )
+            if grade_level:
+                if building == "Girls Building":
+                    class_map = {
+                        "High School": GIRLS_HIGH_SCHOOL,
+                        "Middle School": GIRLS_MIDDLE_SCHOOL,
+                        "Elementary School": GIRLS_ELEMENTARY,
+                    }
+                else:
+                    class_map = {
+                        "High School": BOYS_HIGH_SCHOOL,
+                        "Middle School": BOYS_MIDDLE_SCHOOL,
+                        "Elementary School": BOYS_ELEMENTARY,
+                    }
+                class_name = st.selectbox(
+                    "Class *",
+                    class_map[grade_level],
+                    index=None,
+                    placeholder="Select a class",
+                ) or ""
+
+        if location_choice == "Other":
+            custom_location = st.text_input(
+                "Other place *",
+                placeholder="Type the place",
+                help="Enter the place if it is not listed above.",
+            )
+            location = custom_location.strip()
+        else:
+            location = location_choice or ""
 
     with st.form("rss_report_form", clear_on_submit=False):
         item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
         description = st.text_area("Description *", placeholder="Describe the item: color, brand, size, or any detail that can help identify it.", height=100)
-        location = st.selectbox("Place *", location_options, help="Choose the exact place where the item was lost or found.")
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
         photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.")
         submitted = st.form_submit_button("Submit Report", use_container_width=True)
 
         if submitted:
-            missing_school_info = building in ["Girls Building", "Boys Building"] and (not grade_level or not class_name.strip())
-            if not item_name.strip() or not description.strip() or not location.strip() or missing_school_info:
+            classroom_selected = location_choice == "Classroom" if building else False
+            missing_school_info = classroom_selected and (not grade_level or not class_name.strip())
+            missing_other_place = building and location_choice == "Other" and not custom_location.strip()
+            if not building or not location or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place:
                 st.error("Please complete all required fields.")
             elif not valid_rss_email(email):
                 st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
@@ -523,7 +568,7 @@ elif st.session_state.page == "form":
                     "Type": report_type,
                     "Building": building,
                     "ItemCategory": "",
-                    "GradeLevel": grade_level,
+                    "GradeLevel": grade_level or "",
                     "Class": class_name.strip(),
                     "ItemName": item_name.strip(),
                     "Description": description.strip(),
