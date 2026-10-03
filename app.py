@@ -46,8 +46,26 @@ div[data-testid="stMarkdownContainer"] > p,
     opacity:1 !important;
     font-weight:700 !important;
 }
-/* Input/select text stays dark and visible. */
-input, textarea, [data-baseweb="select"] * {
+/* Typed text stays dark. Select boxes are navy, so their selected values must be white. */
+input, textarea {
+    color:#172033 !important;
+}
+[data-baseweb="select"] > div,
+[data-baseweb="select"] [role="combobox"] {
+    background:var(--navy) !important;
+    color:#fff !important;
+}
+[data-baseweb="select"] [role="combobox"] *,
+[data-baseweb="select"] svg {
+    color:#fff !important;
+    fill:#fff !important;
+}
+/* Dropdown menu itself remains easy to read after it opens. */
+[role="listbox"], [role="option"] {
+    background:#fff !important;
+    color:#172033 !important;
+}
+[role="option"] * {
     color:#172033 !important;
 }
 .block-container { max-width:800px; padding-top:2rem; padding-bottom:3rem; }
