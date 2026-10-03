@@ -277,6 +277,39 @@ def valid_rss_email(email):
     return email.endswith("@rawdalsaleheen.edu.kw") and len(email.split("@", 1)[0]) > 0
 
 
+def resolve_report(report_id):
+    """Remove a resolved report from the active listings and delete its saved photo."""
+    if not DATA_FILE.exists():
+        return False
+    try:
+        df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
+    except (pd.errors.EmptyDataError, pd.errors.ParserError):
+        return False
+    if "ID" not in df.columns:
+        return False
+
+    match = df["ID"].astype(str) == str(report_id)
+    if not match.any():
+        return False
+
+    if "Photo" in df.columns:
+        for photo_path in df.loc[match, "Photo"].astype(str):
+            if photo_path:
+                try:
+                    photo = Path(photo_path)
+                    if photo.exists() and photo.is_file():
+                        photo.unlink()
+                except OSError:
+                    pass
+
+    df = df.loc[~match].copy()
+    for column in REPORT_COLUMNS:
+        if column not in df.columns:
+            df[column] = ""
+    df[REPORT_COLUMNS].to_csv(DATA_FILE, index=False)
+    return True
+
+
 def go_home():
     st.session_state.page = "home"
     st.session_state.report_type = None
@@ -396,9 +429,45 @@ elif st.session_state.page == "item_detail":
             st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
     else:
         st.info("This old test report has been removed from the contact view because it has no finder email.")
+
+    if contact_email:
+        st.markdown("### Item returned?")
+        st.markdown('<div class="helper">Only the person who submitted this report can remove it. Enter the same RSS email used when the report was created.</div>', unsafe_allow_html=True)
+        with st.form(f'resolve_form_{item.get("ID", "item")}'):
+            resolve_email = st.text_input(
+                "Your RSS email",
+                placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw",
+                key=f'resolve_email_{item.get("ID", "item")}'
+            )
+            resolve_clicked = st.form_submit_button("MARK AS RESOLVED", use_container_width=True)
+            if resolve_clicked:
+                entered_email = resolve_email.strip().lower()
+                if not valid_rss_email(entered_email):
+                    st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
+                elif entered_email != contact_email.lower():
+                    st.error("That email does not match the RSS email used to submit this report.")
+                elif resolve_report(item.get("ID", "")):
+                    st.session_state.selected_item = None
+                    st.session_state.page = "resolved"
+                    st.rerun()
+                else:
+                    st.error("This report could not be removed. Please try again.")
+
     back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
     if st.button(back_label, use_container_width=True):
         st.session_state.page = "missing_items" if is_lost_item else "found_items"
+        st.rerun()
+
+elif st.session_state.page == "resolved":
+    st.markdown("""
+    <div class="success-box">
+        <h2 style="color:#102a52;margin-top:0;">Item Resolved</h2>
+        <p style="color:#667085;margin-bottom:0;">The report has been removed from the active Lost & Found listings.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.write("")
+    if st.button("Back to Home", use_container_width=True, key="resolved_home"):
+        go_home()
         st.rerun()
 
 elif st.session_state.page == "form":
