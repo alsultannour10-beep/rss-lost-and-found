@@ -2,6 +2,7 @@
 import streamlit as st
 from datetime import date, time
 from difflib import SequenceMatcher
+from pathlib import Path
 
 st.set_page_config(
     page_title="RSS Lost & Found",
@@ -34,58 +35,52 @@ if "reports" not in st.session_state:
     ]
 
 # -----------------------------
-# Tech Expo design
+# RSS-inspired school design
 # -----------------------------
+LOGO_PATH = Path(__file__).with_name("rss_logo.jpeg")
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-.stApp { background:#f6f8fc; font-family:'Inter',sans-serif; }
-.block-container { max-width:1250px; padding-top:2rem; padding-bottom:3rem; }
-[data-testid="stSidebar"] { background:#111827; }
-[data-testid="stSidebar"] * { color:white !important; }
+:root { --rss-navy:#0b2349; --rss-blue:#163b72; --rss-gray:#747987; --rss-line:#e7eaf0; }
+.stApp { background:#ffffff; font-family:'Inter',sans-serif; color:#172033; }
+.block-container { max-width:1200px; padding-top:1.4rem; padding-bottom:3rem; }
+[data-testid="stSidebar"] { background:#ffffff; border-right:1px solid var(--rss-line); }
+[data-testid="stSidebar"] * { color:#172033 !important; }
+[data-testid="stSidebar"] .stRadio label { padding:.2rem 0; }
 
+.rss-topline { height:5px; background:var(--rss-navy); border-radius:0 0 5px 5px; margin:-1.4rem 0 1.2rem; }
 .hero {
-    background:linear-gradient(135deg,#111827,#1e3a8a 55%,#2563eb);
-    padding:38px 42px; border-radius:24px; color:white;
-    margin-bottom:25px; box-shadow:0 12px 35px rgba(30,58,138,.18);
+    background:#ffffff; padding:34px 38px; border-radius:20px; color:var(--rss-navy);
+    margin-bottom:25px; border:1px solid var(--rss-line);
+    box-shadow:0 8px 28px rgba(11,35,73,.07);
 }
-.hero h1 { font-size:44px; font-weight:800; margin:0; letter-spacing:-1px; }
-.hero p { font-size:17px; margin:10px 0 0; opacity:.88; }
+.hero h1 { font-size:42px; font-weight:800; margin:0; letter-spacing:-1px; color:var(--rss-navy); }
+.hero p { font-size:17px; margin:10px 0 0; color:#667085; }
 
-.feature-card {
-    background:white; padding:25px; border-radius:18px;
-    border:1px solid #e5e7eb; min-height:155px;
-    box-shadow:0 5px 18px rgba(15,23,42,.05);
+.feature-card, .stat-card {
+    background:#ffffff; border:1px solid var(--rss-line);
+    box-shadow:0 5px 18px rgba(11,35,73,.05);
 }
+.feature-card { padding:25px; border-radius:16px; min-height:155px; }
 .feature-icon { font-size:28px; }
-.feature-title { font-size:19px; font-weight:700; margin-top:10px; }
-.feature-text { color:#64748b; line-height:1.5; margin-top:7px; }
-
-.section-title { font-size:28px; font-weight:800; color:#111827; margin-top:20px; }
-.stat-card {
-    background:white; padding:20px; border-radius:18px;
-    border:1px solid #e5e7eb; text-align:center;
-    box-shadow:0 5px 18px rgba(15,23,42,.04);
-}
-.stat-number { font-size:32px; font-weight:800; color:#111827; }
-.stat-label { color:#64748b; font-size:14px; margin-top:3px; }
-
-.item-title { font-size:21px; font-weight:750; color:#111827; }
+.feature-title { font-size:19px; font-weight:700; margin-top:10px; color:var(--rss-navy); }
+.feature-text { color:#667085; line-height:1.5; margin-top:7px; }
+.section-title { font-size:28px; font-weight:800; color:var(--rss-navy); margin-top:20px; }
+.stat-card { padding:20px; border-radius:16px; text-align:center; }
+.stat-number { font-size:32px; font-weight:800; color:var(--rss-navy); }
+.stat-label { color:#747987; font-size:14px; margin-top:3px; }
+.item-title { font-size:21px; font-weight:750; color:var(--rss-navy); }
 .item-description { color:#475569; margin-top:5px; }
-
-.status-lost { background:#fee2e2; color:#b91c1c; padding:5px 11px; border-radius:999px; font-weight:700; font-size:13px; }
-.status-found { background:#dbeafe; color:#1d4ed8; padding:5px 11px; border-radius:999px; font-weight:700; font-size:13px; }
-.status-returned { background:#dcfce7; color:#15803d; padding:5px 11px; border-radius:999px; font-weight:700; font-size:13px; }
-
-.info-box {
-    background:#eff6ff; border-left:5px solid #2563eb;
-    padding:16px 18px; border-radius:12px; color:#1e3a8a; margin:15px 0;
-}
-div.stButton > button { border-radius:10px; font-weight:600; }
-div[data-testid="stForm"] {
-    background:white; padding:25px; border-radius:18px;
-    border:1px solid #e5e7eb;
-}
+.status-lost { background:#fff1f2; color:#b42318; padding:5px 11px; border-radius:999px; font-weight:700; font-size:13px; }
+.status-found { background:#eef4ff; color:var(--rss-blue); padding:5px 11px; border-radius:999px; font-weight:700; font-size:13px; }
+.status-returned { background:#ecfdf3; color:#027a48; padding:5px 11px; border-radius:999px; font-weight:700; font-size:13px; }
+.info-box { background:#f7f9fc; border-left:5px solid var(--rss-navy); padding:16px 18px; border-radius:10px; color:#344054; margin:15px 0; }
+div.stButton > button, div.stFormSubmitButton > button { border-radius:9px; font-weight:700; border-color:var(--rss-navy); }
+div.stFormSubmitButton > button { background:var(--rss-navy); color:white; }
+div[data-testid="stForm"] { background:#ffffff; padding:25px; border-radius:16px; border:1px solid var(--rss-line); }
+[data-testid="stImage"] img { border-radius:8px; }
+hr { border-color:var(--rss-line) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -141,9 +136,10 @@ def display_report(report):
 # Sidebar
 # -----------------------------
 with st.sidebar:
-    st.markdown("## 🔎 RSS")
+    if LOGO_PATH.exists():
+        st.image(str(LOGO_PATH), use_container_width=True)
     st.markdown("### Lost & Found")
-    st.caption("School-wide Tech Expo Project")
+    st.caption("Rawd Al Saleheen Bilingual School · Tech Expo Project")
     st.divider()
     page = st.radio("MENU", [
         "🏠 Home", "➕ Report an Item", "🔍 Find an Item", "🤖 Smart Match"
@@ -160,13 +156,20 @@ with st.sidebar:
 # -----------------------------
 # Home
 # -----------------------------
+st.markdown('<div class="rss-topline"></div>', unsafe_allow_html=True)
+
 if page == "🏠 Home":
-    st.markdown("""
-    <div class="hero">
-        <h1>🔎 RSS Lost & Found</h1>
-        <p>One simple place to report, search, and reconnect lost belongings across the entire school.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    logo_col, hero_col = st.columns([1, 4], vertical_alignment="center")
+    with logo_col:
+        if LOGO_PATH.exists():
+            st.image(str(LOGO_PATH), use_container_width=True)
+    with hero_col:
+        st.markdown("""
+        <div class="hero">
+            <h1>RSS Lost & Found</h1>
+            <p>One simple place to report, search, and reconnect lost belongings across the Rawd Al Saleheen school community.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     total = len(st.session_state.reports)
     lost = sum(r["status"] == "Lost" for r in st.session_state.reports)
@@ -383,7 +386,7 @@ elif page == "🤖 Smart Match":
 st.divider()
 st.markdown("""
 <div style="text-align:center;color:#64748b;padding:15px;">
-<b>RSS Lost & Found</b> · Tech Expo Project<br>
-Built with Python · Streamlit · GitHub
+<b>RSS Lost & Found</b> · Rawd Al Saleheen Bilingual School<br>
+Tech Expo Project · Built with Python · Streamlit · GitHub
 </div>
 """, unsafe_allow_html=True)
