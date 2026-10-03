@@ -12,11 +12,6 @@ DATA_FILE = BASE_DIR / "rss_reports.csv"
 IMAGE_DIR = BASE_DIR / "rss_item_images"
 IMAGE_DIR.mkdir(exist_ok=True)
 
-ITEM_CATEGORIES = [
-    "Electronics", "Bags & Wallets", "School Supplies", "Clothing & Accessories",
-    "Water Bottles & Lunch Boxes", "Jewelry & Watches", "Keys & Cards",
-    "Sports Items", "Other"
-]
 BUILDINGS = ["Girls Building", "Boys Building", "Administration Building"]
 GRADE_LEVELS = ["High School", "Middle School", "Elementary School"]
 GIRLS_HIGH_SCHOOL = ["9K", "9L", "10K", "10L", "11K", "11L", "12K", "12L"]
@@ -133,18 +128,15 @@ elif st.session_state.page == "found_items":
     reports = load_reports()
     found = reports[reports["Type"].str.lower() == "found"].copy() if not reports.empty else reports
     search = st.text_input("Search found items")
-    category = st.selectbox("Category", ["All"] + ITEM_CATEGORIES)
     if search and not found.empty:
         mask = (found["ItemName"] + " " + found["Description"] + " " + found["Location"]).str.contains(search, case=False, na=False)
         found = found[mask]
-    if category != "All" and not found.empty:
-        found = found[found["ItemCategory"] == category]
     if found.empty:
         st.info("No found items match your search yet.")
     else:
         found = found.sort_values("SubmittedAt", ascending=False)
         for _, row in found.iterrows():
-            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["ItemCategory"]} | {row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
             if st.button("View Item / Contact Finder", key=f'view_{row["ID"]}', use_container_width=True):
                 st.session_state.selected_item = row.to_dict()
                 st.session_state.page = "item_detail"
@@ -167,7 +159,6 @@ elif st.session_state.page == "item_detail":
     photo_path = item.get("Photo", "")
     if photo_path and Path(photo_path).exists():
         st.image(photo_path, use_container_width=True)
-    st.write(f'**Category:** {item["ItemCategory"]}')
     st.write(f'**Building:** {item["Building"]}')
     if item.get("GradeLevel"):
         st.write(f'**Grade Level:** {item["GradeLevel"]}')
@@ -177,7 +168,12 @@ elif st.session_state.page == "item_detail":
     st.write(f'**Date found:** {item["EventDate"]}')
     st.write(f'**Description:** {item["Description"]}')
     st.markdown("### Contact the finder")
-    st.write(item.get("Email", "No contact email provided."))
+    contact_email = str(item.get("Email", "")).strip()
+    if contact_email:
+        st.markdown(f'**Email:** [{contact_email}](mailto:{contact_email})')
+        st.caption("Select the email address to contact the finder using your email app, such as Outlook.")
+    else:
+        st.warning("This older report does not contain a contact email. New reports require an RSS email address.")
     if st.button("Back to Found Items", use_container_width=True):
         st.session_state.page = "found_items"
         st.rerun()
@@ -187,11 +183,7 @@ elif st.session_state.page == "form":
     action = "lost" if report_type == "Lost" else "found"
     st.markdown(f'<div class="choice-title">Report a {report_type} Item</div>', unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        building = st.selectbox("Building *", BUILDINGS)
-    with col2:
-        item_category = st.selectbox("Item Category *", ITEM_CATEGORIES)
+    building = st.selectbox("Building *", BUILDINGS, help="Choose the school building where the item was lost or found.")
 
     grade_level = ""
     class_name = ""
@@ -219,12 +211,12 @@ elif st.session_state.page == "form":
         location_options = ADMIN_LOCATIONS
 
     with st.form("rss_report_form", clear_on_submit=False):
-        item_name = st.text_input("Item name *")
-        description = st.text_area("Description *", height=100)
+        item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
+        description = st.text_area("Description *", placeholder="Describe the item: color, brand, size, or any detail that can help identify it.", height=100)
         location = st.selectbox("Where was it lost/found? *", location_options)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
-        email = st.text_input("RSS Email Address *", placeholder="1730@rawdalsaleheen.edu.kw")
-        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"])
+        email = st.text_input("Email *", placeholder="e.g. 1730@rawdalsaleheen.edu.kw", help="Required so the owner or finder can contact you through Outlook. Your name is not displayed.")
+        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.")
         submitted = st.form_submit_button("Submit Report", use_container_width=True)
 
         if submitted:
@@ -238,7 +230,7 @@ elif st.session_state.page == "form":
                     "ID": uuid.uuid4().hex,
                     "Type": report_type,
                     "Building": building,
-                    "ItemCategory": item_category,
+                    "ItemCategory": "",
                     "GradeLevel": grade_level,
                     "Class": class_name.strip(),
                     "ItemName": item_name.strip(),
