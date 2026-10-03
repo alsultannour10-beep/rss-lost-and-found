@@ -93,6 +93,65 @@ if st.session_state.page == "home":
             st.session_state.page = "form"
             st.rerun()
     st.markdown('<div class="small-note">Choose one option, fill in the short form, and submit.</div>', unsafe_allow_html=True)
+div.stButton > button:hover { border-color:var(--navy); color:var(--navy); }
+div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
+div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
+[data-testid="stFileUploader"] { border-radius:12px; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def save_report(report, uploaded_photo):
+    if uploaded_photo is not None:
+        ext = Path(uploaded_photo.name).suffix.lower()
+        image_name = f"{uuid.uuid4().hex}{ext}"
+        image_path = IMAGE_DIR / image_name
+        image_path.write_bytes(uploaded_photo.getbuffer())
+        report["Photo"] = str(image_path)
+    else:
+        report["Photo"] = ""
+
+    new_row = pd.DataFrame([report])
+    if DATA_FILE.exists():
+        new_row.to_csv(DATA_FILE, mode="a", header=False, index=False)
+    else:
+        new_row.to_csv(DATA_FILE, index=False)
+
+
+def go_home():
+    st.session_state.page = "home"
+    st.session_state.report_type = None
+
+
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+if "report_type" not in st.session_state:
+    st.session_state.report_type = None
+
+# Header shown on every page
+st.markdown('<div class="rss-header">', unsafe_allow_html=True)
+if LOGO_PATH.exists():
+    c1, c2, c3 = st.columns([1, 1.25, 1])
+    with c2:
+        st.image(str(LOGO_PATH), use_container_width=True)
+st.markdown('<div class="rss-title">RSS Lost & Found</div>', unsafe_allow_html=True)
+st.markdown('<div class="rss-subtitle">A simple way for the Rawd Al Saleheen community to report lost and found items.</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+if st.session_state.page == "home":
+    st.markdown('<div class="choice-title">What happened?</div>', unsafe_allow_html=True)
+    left, right = st.columns(2, gap="medium")
+    with left:
+        if st.button("🔴  I LOST AN ITEM", use_container_width=True):
+            st.session_state.report_type = "Lost"
+            st.session_state.page = "form"
+            st.rerun()
+    with right:
+        if st.button("🔵  I FOUND AN ITEM", use_container_width=True):
+            st.session_state.report_type = "Found"
+            st.session_state.page = "form"
+            st.rerun()
+    st.markdown('<div class="small-note">Choose one option, fill in the short form, and submit.</div>', unsafe_allow_html=True)
 
 elif st.session_state.page == "form":
     report_type = st.session_state.report_type
