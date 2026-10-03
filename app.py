@@ -335,8 +335,10 @@ if st.session_state.page == "home":
         st.session_state.page = "found_items"
         st.rerun()
     if st.button("I FOUND AN ITEM", use_container_width=True):
+        # First show missing-item reports so the finder can try to match the item
+        # before creating a new found-item report.
         st.session_state.report_type = "Found"
-        st.session_state.page = "form"
+        st.session_state.page = "missing_items"
         st.rerun()
     if st.button("BROWSE FOUND ITEMS", use_container_width=True):
         st.session_state.page = "found_items"
@@ -393,6 +395,11 @@ elif st.session_state.page == "missing_items":
                 st.session_state.page = "item_detail"
                 st.rerun()
     st.write("")
+    if st.session_state.report_type == "Found":
+        if st.button("I DID NOT FIND A MATCH - REPORT FOUND ITEM", use_container_width=True):
+            st.session_state.report_type = "Found"
+            st.session_state.page = "form"
+            st.rerun()
     if st.button("Back to Home", use_container_width=True, key="missing_back_home"):
         go_home()
         st.rerun()
