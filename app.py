@@ -157,6 +157,46 @@ li[role="option"][aria-selected="true"] {
     color:#102a52 !important;
     -webkit-text-fill-color:#102a52 !important;
 }
+
+/* FINAL FIELD-SURFACE FIX: remove the remaining dark Streamlit pieces. */
+[data-testid="stSelectbox"] [data-baseweb="select"],
+[data-testid="stSelectbox"] [data-baseweb="select"] div,
+[data-testid="stSelectbox"] [role="combobox"],
+[data-testid="stDateInput"] > div,
+[data-testid="stDateInput"] > div > div,
+[data-testid="stDateInput"] [data-baseweb="input"],
+[data-testid="stDateInput"] [data-baseweb="input"] div,
+[data-testid="stDateInput"] input,
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stFileUploaderDropzone"] > div,
+[data-testid="stFileUploaderDropzone"] section,
+[data-testid="stFileUploaderDropzone"] button,
+[data-testid="stFileUploader"] section,
+[data-testid="stFileUploader"] section > div,
+[data-testid="stFileUploader"] button {
+    background: #D1D5DB !important;
+    background-color: #D1D5DB !important;
+    color: #102A52 !important;
+    -webkit-text-fill-color: #102A52 !important;
+}
+
+[data-testid="stSelectbox"] [data-baseweb="select"] svg,
+[data-testid="stDateInput"] svg,
+[data-testid="stFileUploader"] svg {
+    color: #102A52 !important;
+    fill: #102A52 !important;
+}
+
+/* The open select menu is grey too. */
+[data-baseweb="popover"],
+[data-baseweb="popover"] div,
+[data-baseweb="popover"] ul,
+[data-baseweb="popover"] li {
+    background-color: #D1D5DB !important;
+    color: #102A52 !important;
+    -webkit-text-fill-color: #102A52 !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
