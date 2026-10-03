@@ -86,16 +86,21 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] > div svg * {
     stroke:#102a52 !important;
 }
 
-/* OPEN menu stays navy with white choices. */
+/* OPEN menu: light grey choices with navy text. */
 div[data-baseweb="popover"] [role="listbox"],
 div[data-baseweb="popover"] [role="option"] {
-    background-color:#102a52 !important;
+    background-color:#f3f4f6 !important;
 }
 div[data-baseweb="popover"] [role="option"],
 div[data-baseweb="popover"] [role="option"] * {
-    color:#ffffff !important;
-    -webkit-text-fill-color:#ffffff !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
     text-shadow:none !important;
+}
+/* Keep hovered/selected menu choices light grey too. */
+div[data-baseweb="popover"] [role="option"]:hover,
+div[data-baseweb="popover"] [role="option"][aria-selected="true"] {
+    background-color:#e5e7eb !important;
 }
 </style>
 """, unsafe_allow_html=True)
