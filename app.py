@@ -101,6 +101,25 @@ div.stButton > button p, div.stButton > button span { color:#fff !important; }
 div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#fff !important; }
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
 div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
+
+/* Final override: selected text inside every navy Streamlit select box MUST be white. */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"],
+div[data-testid="stSelectbox"] div[data-baseweb="select"] [role="combobox"] *,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] p,
+div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+}
+/* Keep the opened dropdown choices dark on white. */
+div[data-baseweb="popover"] [role="listbox"],
+div[data-baseweb="popover"] [role="option"],
+div[data-baseweb="popover"] [role="option"] * {
+    color: #172033 !important;
+    -webkit-text-fill-color: #172033 !important;
+    background: white !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
