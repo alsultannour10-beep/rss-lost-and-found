@@ -20,8 +20,8 @@ GIRLS_ELEMENTARY = ["1K", "1L", "2K", "2L", "3K", "3L", "4K", "4L"]
 BOYS_HIGH_SCHOOL = ["9H", "9G", "10H", "10G", "11H", "11G", "12H", "12G"]
 BOYS_MIDDLE_SCHOOL = ["5H", "5G", "6H", "6G", "7H", "7G", "8H", "8G"]
 BOYS_ELEMENTARY = ["1H", "1G", "2H", "2G", "3H", "3G", "4H", "4G"]
-GIRLS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Theatre Room"]
-BOYS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Ghaneema's Auditorium"]
+GIRLS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Theatre Room", "Gym", "Cafeteria", "Break Area"]
+BOYS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Ghaneema's Auditorium", "Gym", "Cafeteria", "Break Area"]
 ADMIN_LOCATIONS = ["Library", "Ms Razan Room", "Ms Heba Alodaid Room", "Lobby"]
 REPORT_COLUMNS = [
     "ID", "Type", "Building", "ItemCategory", "GradeLevel", "Class", "ItemName",
