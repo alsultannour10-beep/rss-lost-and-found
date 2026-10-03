@@ -121,19 +121,30 @@ div[data-baseweb="popover"] [role="option"] * {
     background: white !important;
 }
 
-/* HARD OVERRIDE: every glyph inside a CLOSED select box is white. */
-div[data-testid="stSelectbox"] [data-baseweb="select"] * {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-    fill: #ffffff !important;
-    caret-color: #ffffff !important;
+/* FINAL SELECTBOX OVERRIDE: light-grey box with navy selected text. */
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] [role="combobox"] {
+    background-color: #e9ecef !important;
+    border-color: #cbd2da !important;
 }
-/* Dropdown menu itself stays white with dark readable choices. */
-div[data-baseweb="popover"] [role="listbox"] *,
+div[data-testid="stSelectbox"] [data-baseweb="select"] [role="combobox"] *,
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div > div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] p,
+div[data-testid="stSelectbox"] [data-baseweb="select"] span {
+    color: #102a52 !important;
+    -webkit-text-fill-color: #102a52 !important;
+}
+div[data-testid="stSelectbox"] [data-baseweb="select"] svg {
+    color: #102a52 !important;
+    fill: #102a52 !important;
+}
+/* Open dropdown: white menu with navy/dark text. */
+div[data-baseweb="popover"] [role="listbox"],
+div[data-baseweb="popover"] [role="option"],
 div[data-baseweb="popover"] [role="option"] * {
-    color: #172033 !important;
-    -webkit-text-fill-color: #172033 !important;
-    fill: #172033 !important;
+    background-color: #ffffff !important;
+    color: #102a52 !important;
+    -webkit-text-fill-color: #102a52 !important;
 }
 </style>
 """, unsafe_allow_html=True)
