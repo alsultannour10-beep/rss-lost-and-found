@@ -70,19 +70,25 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within {
     box-shadow:none !important;
 }
 
-/* Force the CLOSED select's chosen value to stay white. */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div *,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] span,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] input,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] [class] {
+/* CLOSED SELECT: the initial value AND the value after selection must always be white. */
+div[data-testid="stSelectbox"] [data-baseweb="select"],
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div > div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] p,
+div[data-testid="stSelectbox"] [data-baseweb="select"] span,
+div[data-testid="stSelectbox"] [data-baseweb="select"] input,
+div[data-testid="stSelectbox"] [data-baseweb="select"] [class],
+div[data-testid="stSelectbox"] [data-baseweb="select"] * {
     color:#ffffff !important;
     -webkit-text-fill-color:#ffffff !important;
     opacity:1 !important;
 }
-div[data-testid="stSelectbox"] div[data-baseweb="select"] svg {
+div[data-testid="stSelectbox"] [data-baseweb="select"] svg,
+div[data-testid="stSelectbox"] [data-baseweb="select"] svg * {
     color:#ffffff !important;
     fill:#ffffff !important;
+    stroke:#ffffff !important;
 }
 
 /* Keep every choice in the OPEN menu navy with white text. */
