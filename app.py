@@ -310,6 +310,9 @@ if st.session_state.page == "home":
     if st.button("BROWSE FOUND ITEMS", use_container_width=True):
         st.session_state.page = "found_items"
         st.rerun()
+    if st.button("BROWSE MISSING ITEMS", use_container_width=True):
+        st.session_state.page = "missing_items"
+        st.rerun()
 
 elif st.session_state.page == "found_items":
     st.markdown('<div class="choice-title">Found Items</div>', unsafe_allow_html=True)
@@ -339,12 +342,37 @@ elif st.session_state.page == "found_items":
         go_home()
         st.rerun()
 
+elif st.session_state.page == "missing_items":
+    st.markdown('<div class="choice-title">Missing Items</div>', unsafe_allow_html=True)
+    st.markdown('<div class="helper">These are items students have reported missing. If you recognize or found one, open the report to contact the student.</div>', unsafe_allow_html=True)
+    reports = load_reports()
+    missing = reports[reports["Type"].str.lower() == "lost"].copy() if not reports.empty else reports
+    search = st.text_input("Search missing items")
+    if search and not missing.empty:
+        mask = (missing["ItemName"] + " " + missing["Description"] + " " + missing["Location"]).str.contains(search, case=False, na=False)
+        missing = missing[mask]
+    if missing.empty:
+        st.info("No missing items match your search yet.")
+    else:
+        missing = missing.sort_values("SubmittedAt", ascending=False)
+        for _, row in missing.iterrows():
+            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
+            if st.button("View Missing Item / I Found This", key=f'missing_{row["ID"]}', use_container_width=True):
+                st.session_state.selected_item = row.to_dict()
+                st.session_state.page = "item_detail"
+                st.rerun()
+    st.write("")
+    if st.button("Back to Home", use_container_width=True, key="missing_back_home"):
+        go_home()
+        st.rerun()
+
 elif st.session_state.page == "item_detail":
     item = st.session_state.selected_item
     if not item:
         st.session_state.page = "found_items"
         st.rerun()
     contact_email = str(item.get("Email", "")).strip()
+    is_lost_item = str(item.get("Type", "")).strip().lower() == "lost"
     if contact_email:
         st.markdown(f'<div class="choice-title">{item["ItemName"]}</div>', unsafe_allow_html=True)
         photo_path = item.get("Photo", "")
@@ -355,15 +383,22 @@ elif st.session_state.page == "item_detail":
             st.write(f'**Grade Level:** {item["GradeLevel"]}')
         if item.get("Class"):
             st.write(f'**Class:** {item["Class"]}')
-        st.write(f'**Found at:** {item["Location"]}')
-        st.write(f'**Date found:** {item["EventDate"]}')
+        place_label = "Last seen at" if is_lost_item else "Found at"
+        date_label = "Date lost" if is_lost_item else "Date found"
+        st.write(f'**{place_label}:** {item["Location"]}')
+        st.write(f'**{date_label}:** {item["EventDate"]}')
         st.write(f'**Description:** {item["Description"]}')
-        st.markdown("### Contact the finder")
-        st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+        if is_lost_item:
+            st.markdown("### I Found This Item")
+            st.markdown(f'<div class="contact-box"><strong>Student email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown("### Contact the finder")
+            st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
     else:
         st.info("This old test report has been removed from the contact view because it has no finder email.")
-    if st.button("Back to Found Items", use_container_width=True):
-        st.session_state.page = "found_items"
+    back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
+    if st.button(back_label, use_container_width=True):
+        st.session_state.page = "missing_items" if is_lost_item else "found_items"
         st.rerun()
 
 elif st.session_state.page == "form":
