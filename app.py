@@ -40,7 +40,25 @@ html, body, [class*="css"], .stApp, button, input, textarea, select, label, p, d
 .stDateInput label, .stFileUploader label, .stRadio label {
     color:var(--navy) !important; opacity:1 !important; font-weight:700 !important;
 }
-input, textarea { color:#172033 !important; }
+/* ALL FORM FIELDS: light grey background, navy text. */
+input,
+textarea,
+[data-baseweb="input"],
+[data-baseweb="input"] > div,
+[data-baseweb="base-input"],
+[data-baseweb="base-input"] > div,
+[data-baseweb="select"],
+[data-baseweb="select"] > div,
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stDateInput"] input,
+[data-testid="stSelectbox"] [role="combobox"] {
+    background:#D1D5DB !important;
+    background-color:#D1D5DB !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
+}
+
 .block-container { max-width:800px; padding-top:2rem; padding-bottom:3rem; }
 #MainMenu, footer, header { visibility:hidden; }
 .rss-header { text-align:center; margin-bottom:24px; }
@@ -118,6 +136,26 @@ li[role="option"]:hover,
 li[role="option"][aria-selected="true"] {
     background:#c4c9d1 !important;
     background-color:#c4c9d1 !important;
+}
+/* FINAL OVERRIDE: these are the actual Streamlit/BaseWeb field surfaces. */
+.stApp div[data-baseweb="select"] > div,
+.stApp div[data-baseweb="input"],
+.stApp div[data-baseweb="input"] > div,
+.stApp div[data-baseweb="base-input"],
+.stApp div[data-baseweb="base-input"] > div,
+.stApp input,
+.stApp textarea,
+.stApp [role="combobox"] {
+    background:#D1D5DB !important;
+    background-color:#D1D5DB !important;
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
+}
+.stApp div[data-baseweb="select"] *,
+.stApp div[data-baseweb="input"] *,
+.stApp div[data-baseweb="base-input"] * {
+    color:#102a52 !important;
+    -webkit-text-fill-color:#102a52 !important;
 }
 </style>
 """, unsafe_allow_html=True)
