@@ -423,7 +423,7 @@ elif st.session_state.page == "item_detail":
         st.write(f'**Description:** {item["Description"]}')
         if is_lost_item:
             st.markdown("### I Found This Item")
-            st.markdown(f'<div class="contact-box"><strong>Student email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
         else:
             st.markdown("### Contact the finder")
             st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
@@ -432,26 +432,30 @@ elif st.session_state.page == "item_detail":
 
     if contact_email:
         st.markdown("### Item returned?")
-        st.markdown('<div class="helper">Only the person who submitted this report can remove it. Enter the same RSS email used when the report was created.</div>', unsafe_allow_html=True)
-        with st.form(f'resolve_form_{item.get("ID", "item")}'):
-            resolve_email = st.text_input(
-                "Your RSS email",
-                placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw",
-                key=f'resolve_email_{item.get("ID", "item")}'
-            )
-            resolve_clicked = st.form_submit_button("MARK AS RESOLVED", use_container_width=True)
-            if resolve_clicked:
-                entered_email = resolve_email.strip().lower()
-                if not valid_rss_email(entered_email):
-                    st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
-                elif entered_email != contact_email.lower():
-                    st.error("That email does not match the RSS email used to submit this report.")
-                elif resolve_report(item.get("ID", "")):
-                    st.session_state.selected_item = None
-                    st.session_state.page = "resolved"
+        item_id = str(item.get("ID", ""))
+        confirm_key = f"confirm_resolve_{item_id}"
+
+        if not st.session_state.get(confirm_key, False):
+            st.markdown('<div class="helper">If this item has been returned to its owner, mark the report as resolved to remove it from the active listings.</div>', unsafe_allow_html=True)
+            if st.button("MARK AS RESOLVED", use_container_width=True, key=f"resolve_start_{item_id}"):
+                st.session_state[confirm_key] = True
+                st.rerun()
+        else:
+            st.warning("Are you sure this item has been returned to its owner?")
+            confirm_col, cancel_col = st.columns(2)
+            with confirm_col:
+                if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
+                    if resolve_report(item_id):
+                        st.session_state.pop(confirm_key, None)
+                        st.session_state.selected_item = None
+                        st.session_state.page = "resolved"
+                        st.rerun()
+                    else:
+                        st.error("This report could not be removed. Please try again.")
+            with cancel_col:
+                if st.button("CANCEL", use_container_width=True, key=f"resolve_cancel_{item_id}"):
+                    st.session_state.pop(confirm_key, None)
                     st.rerun()
-                else:
-                    st.error("This report could not be removed. Please try again.")
 
     back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
     if st.button(back_label, use_container_width=True):
