@@ -54,11 +54,12 @@ input, textarea { color:#172033 !important; }
 .item-card { border:1px solid var(--line); border-radius:16px; padding:18px; margin:12px 0; background:#fff; }
 .item-name { color:var(--navy); font-size:1.3rem; font-weight:700; margin-bottom:4px; }
 .item-meta { color:#667085; font-size:.95rem; margin-bottom:8px; }
-div.stButton > button { min-height:58px; border-radius:14px; font-size:1.05rem; font-weight:700; border:1px solid var(--navy); background:var(--navy); color:#fff !important; }
-div.stButton > button p, div.stButton > button span { color:#fff !important; }
-div.stButton > button:hover { background:#173a6b; border-color:#173a6b; color:#fff !important; }
+div.stButton > button { min-height:58px; border-radius:14px; font-size:1.05rem; font-weight:700; border:1px solid #b9bec7; background:#D1D5DB !important; color:#102a52 !important; }
+div.stButton > button p, div.stButton > button span { color:#102a52 !important; -webkit-text-fill-color:#102a52 !important; }
+div.stButton > button:hover { background:#c4c9d1 !important; border-color:#b9bec7 !important; color:#102a52 !important; }
 div.stForm { border:1px solid var(--line); border-radius:18px; padding:22px; background:#fff; }
-div.stFormSubmitButton > button { background:var(--navy); color:white; border-color:var(--navy); min-height:48px; }
+div.stFormSubmitButton > button { background:#D1D5DB !important; color:#102a52 !important; border-color:#b9bec7 !important; min-height:48px; }
+div.stFormSubmitButton > button p, div.stFormSubmitButton > button span { color:#102a52 !important; -webkit-text-fill-color:#102a52 !important; }
 
 /* SELECT BOXES — override Streamlit/BaseWeb dark-theme backgrounds at EVERY nested level. */
 div[data-testid="stSelectbox"] div[data-baseweb="select"],
