@@ -7,9 +7,20 @@ import json
 
 
 VERIFICATION_OPTIONS = {
+    # Simple, non-overlapping categories used for NEW reports.
+    "Color": ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
+    "Brand": ["Apple", "Samsung", "Microsoft", "Lenovo", "HP", "Dell", "ASUS", "Acer", "Huawei", "Xiaomi", "Sony", "JBL", "Bose", "Logitech", "Casio", "Nike", "Adidas", "Puma", "Under Armour", "New Balance", "Converse", "Vans", "Stanley", "Hydro Flask", "Other", "No visible brand"],
+    "Case / Cover": ["No case/cover", "Black", "White", "Grey", "Clear/Transparent", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Multicolor", "Other"],
+    "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Name label", "School label", "Keychain/charm", "Decorative tape", "Other"],
+    "Damage / Mark": ["None", "Scratch", "Crack", "Dent", "Chip", "Stain", "Tear", "Scuff", "Missing part", "Writing/ink mark", "Other"],
+    "Name / Initials": ["No", "Yes - printed label", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
+    "Pattern / Design": ["Plain", "Striped", "Checkered", "Floral", "Geometric", "Camouflage", "Character/cartoon", "Logo/graphic", "Text/quote", "Multicolor pattern", "Other"],
+    "Something Attached": ["Nothing", "Charger/cable", "Stylus/pen", "Keyboard", "Mouse", "Strap/lanyard", "Keychain/charm", "Bottle lid/straw", "Pouch/bag", "Other"],
+
+    # Legacy category names are kept only so reports created with the previous
+    # version can still be claimed. They are NOT offered for new reports.
     "Primary color": ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
     "Secondary color": ["None", "Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
-    "Brand": ["Apple", "Samsung", "Microsoft", "Lenovo", "HP", "Dell", "ASUS", "Acer", "Huawei", "Xiaomi", "Sony", "JBL", "Bose", "Logitech", "Casio", "Nike", "Adidas", "Puma", "Under Armour", "New Balance", "Converse", "Vans", "Stanley", "Hydro Flask", "Other", "No visible brand"],
     "Case or cover": ["No case/cover", "Soft case", "Hard case", "Folio/book case", "Keyboard case", "Sleeve/pouch", "Protective cover", "Other"],
     "Case/cover color": ["No case/cover", "Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
     "Pattern/design": ["Plain", "Striped", "Checkered", "Floral", "Geometric", "Camouflage", "Character/cartoon", "Logo/graphic", "Text/quote", "Multicolor pattern", "Other"],
@@ -21,6 +32,11 @@ VERIFICATION_OPTIONS = {
     "Name/initials present": ["No", "Yes - printed label", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
     "Accessory attached": ["None", "Charger/cable", "Stylus/pen", "Keyboard", "Mouse", "Strap/lanyard", "Keychain/charm", "Bottle lid/straw", "Pouch/bag", "Other"],
 }
+
+NEW_VERIFICATION_CATEGORIES = [
+    "Color", "Brand", "Case / Cover", "Sticker / Decoration",
+    "Damage / Mark", "Name / Initials", "Pattern / Design", "Something Attached",
+]
 
 def parse_verification_data(value):
     if not value or pd.isna(value):
@@ -665,7 +681,7 @@ elif st.session_state.page == "form":
             st.caption("Choose 3 to 5 secret details about the item. We recommend 4. Pick details the real owner would know. These answers stay hidden from the public listing.")
             verification_categories = st.multiselect(
                 "Choose 3–5 secret details *",
-                options=list(VERIFICATION_OPTIONS.keys()),
+                options=NEW_VERIFICATION_CATEGORIES,
                 max_selections=5,
                 placeholder="Choose secret details",
                 help="Minimum 3, recommended 4, maximum 5.",
