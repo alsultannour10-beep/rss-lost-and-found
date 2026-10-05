@@ -845,25 +845,21 @@ elif st.session_state.page == "form":
     suggested_name, description_example = item_guidance(item_category, item_type)
     if item_type:
         st.info(
-            "Keep the public description simple. Write only details that help someone recognize the item. "
-            "For FOUND items, keep unique ownership details for the private verification questions below."
+            "Add only what you know. One useful visible detail is enough, and extra details are optional."
         )
 
-    item_name = st.text_input(
-        "Item name *",
-        placeholder=f"Example: {suggested_name}" if item_type else "First choose an item category and item type",
-        help="Use a short, simple name. You do not need to write a full sentence.",
-        key="report_item_name",
-    )
+    # Item type already identifies the item; do not ask the student to repeat it.
+    item_name = item_type or suggested_name
+    if item_type:
+        st.caption(f"Selected item: {item_type}")
+
     description = st.text_area(
-        "Description *",
+        "Extra details (optional)",
         placeholder=description_example if item_type else "Choose the item type first to see an example.",
-        help="Good details: color, size, shape, general condition, or another visible feature. Avoid private details that should be used to prove ownership.",
+        help="Add only something useful you actually know, such as color, size, subject, or a visible feature. Leave it blank if you do not know.",
         height=110,
         key="report_description",
     )
-    if item_type:
-        st.caption(f"What to write: {description_example}")
 
     verification_question = ""
     verification_answer = ""
@@ -907,11 +903,11 @@ elif st.session_state.page == "form":
             or verification_count > 5
             or any(v == "Select an answer" for v in verification_data.values())
         )
-        if not building or not location or not item_category or not item_type or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place or missing_verification:
+        if not building or not location or not item_category or not item_type or not item_name.strip()  or missing_school_info or missing_other_place or missing_verification:
             if missing_verification:
                 st.error("For a found item, answer each secret detail before submitting.")
             else:
-                st.error("Please complete every field marked with *. Check the Building, Place, Item category, Item type, Item name, Description, Date, and RSS email.")
+                st.error("Please complete every field marked with *. Check the Building, Place, Item category, Item type, Item name, Date, and RSS email.")
         elif not valid_rss_email(email):
             st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
         else:
