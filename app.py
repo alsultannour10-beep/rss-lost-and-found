@@ -21,6 +21,68 @@ ITEM_TYPES = {
 COMMON_COLORS = ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"]
 YES_NO = ["No", "Yes"]
 
+ITEM_EXAMPLES = {
+    "Electronics": {
+        "iPad": ("iPad", "Example: Space Grey iPad with a clear case. Do not write private ownership details here."),
+        "Laptop": ("Laptop", "Example: Silver laptop with a black protective sleeve."),
+        "Calculator": ("Calculator", "Example: Black scientific calculator."),
+        "Smartwatch": ("Smartwatch", "Example: Black smartwatch with a silicone strap."),
+        "Charger": ("Charger", "Example: White charging adapter with cable."),
+        "Other": ("Electronic item", "Example: Describe what the electronic item is and its general appearance."),
+    },
+    "Water Bottle": {
+        "Bottle": ("Water bottle", "Example: Blue bottle with a flip lid."),
+        "Tumbler": ("Tumbler", "Example: Pink tumbler with a handle and straw."),
+        "Other": ("Drink container", "Example: Describe the type, color, and general appearance."),
+    },
+    "Clothing": {
+        "P.E Shirt": ("P.E Shirt", "Example: School P.E shirt. Mention the size if known and any general visible features."),
+        "Senior Hoodie": ("Senior Hoodie", "Example: Senior hoodie. Mention the size and general appearance if known."),
+        "School Jacket": ("School Jacket", "Example: School jacket. Mention the size and general appearance if known."),
+        "P.E Pants": ("P.E Pants", "Example: School P.E pants. Mention the size if known."),
+        "School Dress": ("School Dress", "Example: School dress. Mention the size and general appearance if known."),
+    },
+    "Bag": {
+        "Backpack": ("Backpack", "Example: Navy backpack with two main compartments."),
+        "Handbag": ("Handbag", "Example: Black handbag with short handles."),
+        "Sports Bag": ("Sports Bag", "Example: Black sports bag with a shoulder strap."),
+        "Tote Bag": ("Tote Bag", "Example: Beige tote bag with long handles."),
+        "Pouch": ("Pouch", "Example: Small blue zip pouch."),
+        "Other": ("Bag", "Example: Describe the type of bag and its general appearance."),
+    },
+    "School Supplies": {
+        "Pencil Case": ("Pencil Case", "Example: Blue rectangular pencil case."),
+        "Pen": ("Pen", "Example: Blue pen with a clear body."),
+        "Ruler": ("Ruler", "Example: Clear 30 cm ruler."),
+        "Scissors": ("Scissors", "Example: Small scissors with blue handles."),
+        "Other": ("School supply", "Example: Describe what the school supply is and its general appearance."),
+    },
+    "Book": {
+        "Textbook": ("Textbook", "Example: Mathematics textbook. Mention the grade or subject if visible."),
+        "Notebook": ("Notebook", "Example: Blue lined notebook. Mention the subject if known."),
+        "Workbook": ("Workbook", "Example: English workbook. Mention the grade if visible."),
+        "Reading Book": ("Reading Book", "Example: Reading book with a blue cover."),
+        "Folder": ("Folder", "Example: Red plastic folder."),
+    },
+    "Lunch Box": {
+        "Lunch Box": ("Lunch Box", "Example: Blue lunch box with two compartments."),
+    },
+    "Eyewear": {
+        "Glasses": ("Glasses", "Example: Black rectangular glasses."),
+        "Sunglasses": ("Sunglasses", "Example: Black sunglasses with a hard case."),
+    },
+    "Locker Keys": {
+        "Locker Key": ("Locker Key", "Example: Locker key with a blue keychain. Do not include a locker number in the public description."),
+    },
+}
+
+def item_guidance(category, item_type):
+    return ITEM_EXAMPLES.get(category, {}).get(
+        item_type,
+        (item_type or "Item", "Describe the item using simple visible details such as color, size, shape, or general condition.")
+    )
+
+
 CATEGORY_VERIFICATION_OPTIONS = {
     "Electronics": {
         "Color": COMMON_COLORS,
@@ -684,6 +746,10 @@ elif st.session_state.page == "form":
     report_type = st.session_state.report_type
     action = "lost" if report_type == "Lost" else "found"
     st.markdown(f'<div class="choice-title">Report a {report_type} Item</div>', unsafe_allow_html=True)
+    if report_type == "Lost":
+        st.markdown('<div class="helper">Tell us where you last saw the item, what type of item it is, and a simple description. You do not need to know every detail.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="helper">Tell us where you found the item and describe it generally. Keep identifying details private so they can be used to verify the owner.</div>', unsafe_allow_html=True)
 
     # Start with no preselected building/place so a shared link opens cleanly.
     building = st.selectbox(
@@ -749,8 +815,8 @@ elif st.session_state.page == "form":
         if location_choice == "Other":
             custom_location = st.text_input(
                 "Other place *",
-                placeholder="Type the place",
-                help="Enter the place if it is not listed above.",
+                placeholder="Example: Outside the library entrance",
+                help="Be specific enough that another student or staff member can understand where you mean.",
             )
             location = custom_location.strip()
         else:
@@ -776,20 +842,35 @@ elif st.session_state.page == "form":
             key="report_item_type",
         ) or ""
 
-    item_name = st.text_input("Item name *", placeholder="Example: Blue water bottle", key="report_item_name")
+    suggested_name, description_example = item_guidance(item_category, item_type)
+    if item_type:
+        st.info(
+            "Keep the public description simple. Write only details that help someone recognize the item. "
+            "For FOUND items, keep unique ownership details for the private verification questions below."
+        )
+
+    item_name = st.text_input(
+        "Item name *",
+        placeholder=f"Example: {suggested_name}" if item_type else "First choose an item category and item type",
+        help="Use a short, simple name. You do not need to write a full sentence.",
+        key="report_item_name",
+    )
     description = st.text_area(
         "Description *",
-        placeholder="Describe the item generally, but do not reveal the secret details.",
-        height=100,
+        placeholder=description_example if item_type else "Choose the item type first to see an example.",
+        help="Good details: color, size, shape, general condition, or another visible feature. Avoid private details that should be used to prove ownership.",
+        height=110,
         key="report_description",
     )
+    if item_type:
+        st.caption(f"What to write: {description_example}")
 
     verification_question = ""
     verification_answer = ""
     verification_data = {}
     if report_type == "Found" and item_category:
         st.markdown("### Help Us Return It to the Right Person")
-        st.caption("Choose how many secret checks to use. The questions are automatically filtered for this item category, so you will not see unrelated choices.")
+        st.caption("These answers are PRIVATE and will not appear in the public item listing. Choose details that the real owner is likely to know. Avoid guessing when possible.")
 
         # Performance-friendly verification: instead of a large multiselect that
         # rebuilds several dependent widgets on every click, use the first 3–5
@@ -806,13 +887,13 @@ elif st.session_state.page == "form":
             key="report_verification_count",
         )
         verification_categories = available_details[:check_count]
-        st.caption("Secret checks: " + ", ".join(verification_categories))
+        st.caption("Private ownership checks: " + ", ".join(verification_categories))
         verification_data = verification_selectors(
             "finder_verification", verification_categories, item_category
         )
 
     event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today(), key="report_event_date")
-    email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.", key="report_email")
+    email = st.text_input("Your RSS email *", placeholder="Example: 1730@rawdalsaleheen.edu.kw", help="Enter your school RSS email, not a personal email. It is used only so the owner or finder can contact you.", key="report_email")
     photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.", key="report_photo")
     submitted = st.button("Submit Report", use_container_width=True, key="submit_report")
 
@@ -830,7 +911,7 @@ elif st.session_state.page == "form":
             if missing_verification:
                 st.error("For a found item, answer each secret detail before submitting.")
             else:
-                st.error("Please complete all required fields.")
+                st.error("Please complete every field marked with *. Check the Building, Place, Item category, Item type, Item name, Description, Date, and RSS email.")
         elif not valid_rss_email(email):
             st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
         else:
