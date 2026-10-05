@@ -3,6 +3,45 @@ import pandas as pd
 from datetime import date, datetime
 from pathlib import Path
 import uuid
+import json
+
+
+VERIFICATION_OPTIONS = {
+    "Primary color": ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
+    "Secondary color": ["None", "Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
+    "Brand": ["Apple", "Samsung", "Microsoft", "Lenovo", "HP", "Dell", "ASUS", "Acer", "Huawei", "Xiaomi", "Sony", "JBL", "Bose", "Logitech", "Casio", "Nike", "Adidas", "Puma", "Under Armour", "New Balance", "Converse", "Vans", "Stanley", "Hydro Flask", "Other", "No visible brand"],
+    "Case or cover": ["No case/cover", "Soft case", "Hard case", "Folio/book case", "Keyboard case", "Sleeve/pouch", "Protective cover", "Other"],
+    "Case/cover color": ["No case/cover", "Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
+    "Pattern/design": ["Plain", "Striped", "Checkered", "Floral", "Geometric", "Camouflage", "Character/cartoon", "Logo/graphic", "Text/quote", "Multicolor pattern", "Other"],
+    "Sticker/decoration": ["None", "One sticker", "Multiple stickers", "Name label", "School label", "Keychain/charm", "Decorative tape", "Other"],
+    "Visible damage/mark": ["None", "Scratch", "Crack", "Dent", "Chip", "Stain", "Tear", "Scuff", "Missing part", "Writing/ink mark", "Other"],
+    "Where is the damage/mark?": ["No damage/mark", "Front", "Back", "Top", "Bottom", "Left side", "Right side", "Top-left corner", "Top-right corner", "Bottom-left corner", "Bottom-right corner", "Multiple areas", "Other"],
+    "Size": ["Very small", "Small", "Medium", "Large", "Very large", "Other"],
+    "Material": ["Plastic", "Metal", "Glass", "Fabric", "Leather", "Faux leather", "Rubber", "Silicone", "Wood", "Paper/cardboard", "Mixed materials", "Other"],
+    "Name/initials present": ["No", "Yes - printed label", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
+    "Accessory attached": ["None", "Charger/cable", "Stylus/pen", "Keyboard", "Mouse", "Strap/lanyard", "Keychain/charm", "Bottle lid/straw", "Pouch/bag", "Other"],
+}
+
+def parse_verification_data(value):
+    if not value or pd.isna(value):
+        return {}
+    try:
+        data = json.loads(str(value))
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return {}
+
+def verification_selectors(prefix, selected_categories):
+    """Render only the ownership categories selected for this item."""
+    answers = {}
+    for category in selected_categories:
+        options = VERIFICATION_OPTIONS.get(category, ["Other"])
+        answers[category] = st.selectbox(
+            category,
+            ["Select an answer"] + options,
+            key=f"{prefix}_{category}",
+        )
+    return answers
 
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
 
@@ -25,7 +64,7 @@ BOYS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Ghaneema's Auditorium", "
 ADMIN_LOCATIONS = ["Library", "Ms Razan Room", "Ms Heba Alodaid Room", "Lobby"]
 REPORT_COLUMNS = [
     "ID", "Type", "Building", "ItemCategory", "GradeLevel", "Class", "ItemName",
-    "Description", "Location", "EventDate", "Email", "Photo", "VerificationQuestion", "VerificationAnswer", "SubmittedAt"
+    "Description", "Location", "EventDate", "Email", "Photo", "VerificationQuestion", "VerificationAnswer", "VerificationData", "SubmittedAt"
 ]
 
 st.markdown("""
@@ -443,34 +482,57 @@ elif st.session_state.page == "item_detail":
             st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
         else:
             st.markdown("### Ownership Verification")
+            verification_data = parse_verification_data(item.get("VerificationData", ""))
             verification_question = str(item.get("VerificationQuestion", "")).strip()
             verification_answer = str(item.get("VerificationAnswer", "")).strip()
             verified_key = f"ownership_verified_{item.get('ID', '')}"
 
-            if verification_question and verification_answer and not st.session_state.get(verified_key, False):
-                st.markdown('<div class="helper">To protect the item, the finder’s contact information stays hidden until you answer a private ownership question correctly.</div>', unsafe_allow_html=True)
+            if verification_data and not st.session_state.get(verified_key, False):
+                item_id = str(item.get("ID", ""))
+                attempts_key = f"ownership_attempts_{item_id}"
+                attempts = st.session_state.get(attempts_key, 0)
+                st.markdown("### This Is My Item")
+                st.markdown('<div class="helper">Answer the private details chosen by the finder. All answers must match. We will not show which answer is wrong.</div>', unsafe_allow_html=True)
+
+                if attempts >= 3:
+                    st.error("You have used 3 verification attempts. Please ask a teacher or staff member for help verifying this item.")
+                else:
+                    claim_answers = verification_selectors(f"claim_{item_id}", verification_data.keys())
+                    st.caption(f"Attempts remaining: {3 - attempts}")
+                    if st.button("CHECK MY ANSWERS", use_container_width=True, key=f"verify_{item_id}"):
+                        unanswered = [k for k, v in claim_answers.items() if v == "Select an answer"]
+                        if unanswered:
+                            st.error("Please answer every question before checking your answers.")
+                        else:
+                            all_correct = all(claim_answers.get(k) == v for k, v in verification_data.items())
+                            if all_correct:
+                                st.session_state[verified_key] = True
+                                st.rerun()
+                            else:
+                                attempts += 1
+                                st.session_state[attempts_key] = attempts
+                                if attempts >= 3:
+                                    st.error("We couldn't verify this item. Please ask a teacher or staff member for help.")
+                                else:
+                                    st.error("We couldn't verify this item. Check your answers and try again, or ask a teacher for help.")
+            elif verification_question and verification_answer and not st.session_state.get(verified_key, False):
+                # Backward compatibility for reports created with the older question/answer system.
                 st.markdown(f"**Verification question:** {verification_question}")
-                claim_answer = st.text_input(
-                    "Your answer *",
-                    key=f"claim_answer_{item.get('ID', '')}",
-                    placeholder="Enter the private detail that proves the item is yours",
-                )
+                claim_answer = st.text_input("Your answer *", key=f"claim_answer_{item.get('ID', '')}")
                 if st.button("VERIFY OWNERSHIP", use_container_width=True, key=f"verify_{item.get('ID', '')}"):
-                    if not claim_answer.strip():
-                        st.error("Please answer the ownership question.")
-                    elif normalize_verification_answer(claim_answer) == normalize_verification_answer(verification_answer):
+                    if normalize_verification_answer(claim_answer) == normalize_verification_answer(verification_answer):
                         st.session_state[verified_key] = True
                         st.rerun()
                     else:
-                        st.error("That answer does not match the finder’s private verification detail. Please check your answer or ask a staff member for help.")
+                        st.error("That answer does not match the private verification detail.")
             else:
-                if verification_question and verification_answer:
+                if verification_data or (verification_question and verification_answer):
                     st.success("Ownership verification passed.")
                 else:
-                    st.info("This report was created before Ownership Verification was added, so no private verification question is available.")
+                    st.info("This report was created before Ownership Verification was added, so no private verification details are available.")
                 st.markdown("### Contact the finder")
                 st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
-                st.caption("For valuable electronics, the finder or school staff may also ask you to unlock the device or show another proof of ownership before it is returned.")
+                st.caption("For valuable electronics, the finder or school staff should also ask the claimant to unlock the device or show another proof of ownership before it is returned.")
 
     if contact_email:
         st.markdown("### Item returned?")
@@ -597,19 +659,19 @@ elif st.session_state.page == "form":
         description = st.text_area("Description *", placeholder="Describe the item generally, but do not reveal every unique identifying detail.", height=100)
         verification_question = ""
         verification_answer = ""
+        verification_data = {}
         if report_type == "Found":
-            st.markdown("### Ownership Verification")
-            st.caption("Keep one identifying detail private. A person claiming the item must answer this correctly before the finder’s email is shown.")
-            verification_question = st.text_input(
-                "Private verification question *",
-                placeholder="Example: What color is the case?",
-                help="Ask about something the real owner should know. Do not put the answer in the public description.",
+            st.markdown("### Help Us Return It to the Right Person")
+            st.caption("Choose 3 to 5 secret details about the item. We recommend 4. Pick details the real owner would know. These answers stay hidden from the public listing.")
+            verification_categories = st.multiselect(
+                "Choose 3–5 secret details *",
+                options=list(VERIFICATION_OPTIONS.keys()),
+                max_selections=5,
+                placeholder="Choose secret details",
+                help="Minimum 3, recommended 4, maximum 5.",
             )
-            verification_answer = st.text_input(
-                "Private verification answer *",
-                placeholder="Example: dark green",
-                help="This answer is kept private and is not shown in the public item listing.",
-            )
+            if verification_categories:
+                verification_data = verification_selectors("finder_verification", verification_categories)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
         photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.")
@@ -619,9 +681,17 @@ elif st.session_state.page == "form":
             classroom_selected = location_choice == "Classroom" if building else False
             missing_school_info = classroom_selected and (not grade_level or not class_name.strip())
             missing_other_place = building and location_choice == "Other" and not custom_location.strip()
-            missing_verification = report_type == "Found" and (not verification_question.strip() or not verification_answer.strip())
+            verification_count = len(verification_data)
+            missing_verification = report_type == "Found" and (
+                verification_count < 3
+                or verification_count > 5
+                or any(v == "Select an answer" for v in verification_data.values())
+            )
             if not building or not location or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place or missing_verification:
-                st.error("Please complete all required fields.")
+                if missing_verification:
+                    st.error("For a found item, choose 3 to 5 secret details and answer each one.")
+                else:
+                    st.error("Please complete all required fields.")
             elif not valid_rss_email(email):
                 st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
             else:
@@ -640,6 +710,7 @@ elif st.session_state.page == "form":
                     "Photo": "",
                     "VerificationQuestion": verification_question.strip(),
                     "VerificationAnswer": verification_answer.strip(),
+                    "VerificationData": json.dumps(verification_data, ensure_ascii=False),
                     "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
                 }
                 save_report(report, photo)
