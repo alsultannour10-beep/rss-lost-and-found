@@ -816,18 +816,27 @@ elif st.session_state.page == "form":
     verification_data = {}
     if report_type == "Found" and item_category:
         st.markdown("### Help Us Return It to the Right Person")
-        st.caption("Choose 3 to 5 secret details. We recommend 4. You will only see details that make sense for this type of item. The answers stay hidden from the public listing.")
-        relevant_details = list(CATEGORY_VERIFICATION_OPTIONS[item_category].keys())
-        verification_categories = st.multiselect(
-            "Choose 3–5 secret details *",
-            options=relevant_details,
-            max_selections=5,
-            placeholder="Choose secret details",
-            help="Minimum 3, recommended 4, maximum 5. Each detail can only be chosen once.",
-            key="report_verification_categories",
+        st.caption("Choose how many secret checks to use. The questions are automatically filtered for this item category, so you will not see unrelated choices.")
+
+        # Performance-friendly verification: instead of a large multiselect that
+        # rebuilds several dependent widgets on every click, use the first 3–5
+        # category-specific checks. This keeps the form simple and responsive.
+        available_details = list(CATEGORY_VERIFICATION_OPTIONS[item_category].keys())
+        max_checks = min(5, len(available_details))
+        min_checks = min(3, max_checks)
+        default_checks = min(4, max_checks)
+        check_count = st.selectbox(
+            "Number of secret details *",
+            list(range(min_checks, max_checks + 1)),
+            index=list(range(min_checks, max_checks + 1)).index(default_checks),
+            help="3 minimum, 4 recommended, 5 maximum when available.",
+            key="report_verification_count",
         )
-        if verification_categories:
-            verification_data = verification_selectors("finder_verification", verification_categories, item_category)
+        verification_categories = available_details[:check_count]
+        st.caption("Secret checks: " + ", ".join(verification_categories))
+        verification_data = verification_selectors(
+            "finder_verification", verification_categories, item_category
+        )
 
     event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today(), key="report_event_date")
     email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.", key="report_email")
@@ -846,7 +855,7 @@ elif st.session_state.page == "form":
         )
         if not building or not location or not item_category or not item_type or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place or missing_verification:
             if missing_verification:
-                st.error("For a found item, choose 3 to 5 secret details and answer each one.")
+                st.error("For a found item, answer each secret detail before submitting.")
             else:
                 st.error("Please complete all required fields.")
         elif not valid_rss_email(email):
