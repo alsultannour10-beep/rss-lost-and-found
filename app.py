@@ -388,6 +388,7 @@ li[role="option"][aria-selected="true"] {
 """, unsafe_allow_html=True)
 
 
+@st.cache_data(show_spinner=False, ttl=5)
 def load_reports():
     if not DATA_FILE.exists():
         return pd.DataFrame(columns=REPORT_COLUMNS)
@@ -411,12 +412,8 @@ def load_reports():
         & (location.eq("11k") | class_name.eq("11k"))
     )
     if legacy_test.any():
+        # Hide the old demo row in memory only. Do not write to disk during page loads.
         df = df.loc[~legacy_test].copy()
-        # Also clean the CSV when it is writable, so the test record stays gone.
-        try:
-            df[REPORT_COLUMNS].to_csv(DATA_FILE, index=False)
-        except OSError:
-            pass
 
     return df[REPORT_COLUMNS]
 
@@ -439,6 +436,7 @@ def save_report(report, uploaded_photo):
     new_row = pd.DataFrame([report], columns=REPORT_COLUMNS)
     combined = pd.concat([existing, new_row], ignore_index=True)
     combined[REPORT_COLUMNS].to_csv(DATA_FILE, index=False)
+    load_reports.clear()
 
 
 def valid_rss_email(email):
@@ -481,6 +479,7 @@ def resolve_report(report_id):
         if column not in df.columns:
             df[column] = ""
     df[REPORT_COLUMNS].to_csv(DATA_FILE, index=False)
+    load_reports.clear()
     return True
 
 
@@ -626,9 +625,11 @@ elif st.session_state.page == "item_detail":
                 if attempts >= 3:
                     st.error("You have used 3 verification attempts. Please ask a teacher or staff member for help verifying this item.")
                 else:
-                    claim_answers = verification_selectors(f"claim_{item_id}", verification_data.keys(), str(item.get("ItemCategory", "")))
-                    st.caption(f"Attempts remaining: {3 - attempts}")
-                    if st.button("CHECK MY ANSWERS", use_container_width=True, key=f"verify_{item_id}"):
+                    with st.form(f"claim_form_{item_id}"):
+                        claim_answers = verification_selectors(f"claim_{item_id}", verification_data.keys(), str(item.get("ItemCategory", "")))
+                        st.caption(f"Attempts remaining: {3 - attempts}")
+                        check_answers = st.form_submit_button("CHECK MY ANSWERS", use_container_width=True)
+                    if check_answers:
                         unanswered = [k for k, v in claim_answers.items() if v == "Select an answer"]
                         if unanswered:
                             st.error("Please answer every question before checking your answers.")
