@@ -25,7 +25,7 @@ BOYS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Ghaneema's Auditorium", "
 ADMIN_LOCATIONS = ["Library", "Ms Razan Room", "Ms Heba Alodaid Room", "Lobby"]
 REPORT_COLUMNS = [
     "ID", "Type", "Building", "ItemCategory", "GradeLevel", "Class", "ItemName",
-    "Description", "Location", "EventDate", "Email", "Photo", "SubmittedAt"
+    "Description", "Location", "EventDate", "Email", "Photo", "VerificationQuestion", "VerificationAnswer", "SubmittedAt"
 ]
 
 st.markdown("""
@@ -275,6 +275,11 @@ def valid_rss_email(email):
     return email.endswith("@rawdalsaleheen.edu.kw") and len(email.split("@", 1)[0]) > 0
 
 
+def normalize_verification_answer(value):
+    """Normalize an ownership-verification answer for a simple school prototype check."""
+    return " ".join(str(value).strip().lower().split())
+
+
 def resolve_report(report_id):
     """Remove a resolved report from the active listings and delete its saved photo."""
     if not DATA_FILE.exists():
@@ -431,8 +436,35 @@ elif st.session_state.page == "item_detail":
             st.markdown("### I Found This Item")
             st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
         else:
-            st.markdown("### Contact the finder")
-            st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+            st.markdown("### Ownership Verification")
+            verification_question = str(item.get("VerificationQuestion", "")).strip()
+            verification_answer = str(item.get("VerificationAnswer", "")).strip()
+            verified_key = f"ownership_verified_{item.get('ID', '')}"
+
+            if verification_question and verification_answer and not st.session_state.get(verified_key, False):
+                st.markdown('<div class="helper">To protect the item, the finder’s contact information stays hidden until you answer a private ownership question correctly.</div>', unsafe_allow_html=True)
+                st.markdown(f"**Verification question:** {verification_question}")
+                claim_answer = st.text_input(
+                    "Your answer *",
+                    key=f"claim_answer_{item.get('ID', '')}",
+                    placeholder="Enter the private detail that proves the item is yours",
+                )
+                if st.button("VERIFY OWNERSHIP", use_container_width=True, key=f"verify_{item.get('ID', '')}"):
+                    if not claim_answer.strip():
+                        st.error("Please answer the ownership question.")
+                    elif normalize_verification_answer(claim_answer) == normalize_verification_answer(verification_answer):
+                        st.session_state[verified_key] = True
+                        st.rerun()
+                    else:
+                        st.error("That answer does not match the finder’s private verification detail. Please check your answer or ask a staff member for help.")
+            else:
+                if verification_question and verification_answer:
+                    st.success("Ownership verification passed.")
+                else:
+                    st.info("This report was created before Ownership Verification was added, so no private verification question is available.")
+                st.markdown("### Contact the finder")
+                st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+                st.caption("For valuable electronics, the finder or school staff may also ask you to unlock the device or show another proof of ownership before it is returned.")
 
     if contact_email:
         st.markdown("### Item returned?")
@@ -556,7 +588,22 @@ elif st.session_state.page == "form":
 
     with st.form("rss_report_form", clear_on_submit=False):
         item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
-        description = st.text_area("Description *", placeholder="Describe the item: color, brand, size, or any detail that can help identify it.", height=100)
+        description = st.text_area("Description *", placeholder="Describe the item generally, but do not reveal every unique identifying detail.", height=100)
+        verification_question = ""
+        verification_answer = ""
+        if report_type == "Found":
+            st.markdown("### Ownership Verification")
+            st.caption("Keep one identifying detail private. A person claiming the item must answer this correctly before the finder’s email is shown.")
+            verification_question = st.text_input(
+                "Private verification question *",
+                placeholder="Example: What color is the case?",
+                help="Ask about something the real owner should know. Do not put the answer in the public description.",
+            )
+            verification_answer = st.text_input(
+                "Private verification answer *",
+                placeholder="Example: dark green",
+                help="This answer is kept private and is not shown in the public item listing.",
+            )
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
         photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.")
@@ -566,7 +613,8 @@ elif st.session_state.page == "form":
             classroom_selected = location_choice == "Classroom" if building else False
             missing_school_info = classroom_selected and (not grade_level or not class_name.strip())
             missing_other_place = building and location_choice == "Other" and not custom_location.strip()
-            if not building or not location or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place:
+            missing_verification = report_type == "Found" and (not verification_question.strip() or not verification_answer.strip())
+            if not building or not location or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place or missing_verification:
                 st.error("Please complete all required fields.")
             elif not valid_rss_email(email):
                 st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
@@ -584,6 +632,8 @@ elif st.session_state.page == "form":
                     "EventDate": event_date.isoformat(),
                     "Email": email.strip().lower(),
                     "Photo": "",
+                    "VerificationQuestion": verification_question.strip(),
+                    "VerificationAnswer": verification_answer.strip(),
                     "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
                 }
                 save_report(report, photo)
