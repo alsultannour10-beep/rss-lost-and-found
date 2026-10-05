@@ -7,16 +7,15 @@ import json
 
 
 ITEM_TYPES = {
-    "Electronics": ["Tablet", "Phone", "Laptop", "Headphones", "Calculator", "Smartwatch", "Charger", "Other"],
-    "Water Bottle": ["Bottle", "Tumbler", "Flask", "Other"],
-    "Clothing": ["Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Pants", "Dress", "Uniform", "Other"],
+    "Electronics": ["iPad", "Laptop", "Calculator", "Smartwatch", "Charger", "Other"],
+    "Water Bottle": ["Bottle", "Tumbler", "Other"],
+    "Clothing": ["P.E Shirt", "Senior Hoodie", "School Jacket", "P.E Pants", "School Dress"],
     "Bag": ["Backpack", "Handbag", "Sports Bag", "Tote Bag", "Pouch", "Other"],
     "School Supplies": ["Pencil Case", "Pen", "Ruler", "Scissors", "Other"],
-    "Book": ["Textbook", "Notebook", "Workbook", "Reading Book", "Folder", "Other"],
-    "Lunch Box": ["Lunch Box", "Food Container", "Snack Box", "Other"],
-    "Eyewear": ["Glasses", "Sunglasses", "Safety Glasses", "Other"],
-    "Locker Keys": ["Locker Key", "Other"],
-    "Other": ["Other"],
+    "Book": ["Textbook", "Notebook", "Workbook", "Reading Book", "Folder"],
+    "Lunch Box": ["Lunch Box"],
+    "Eyewear": ["Glasses", "Sunglasses"],
+    "Locker Keys": ["Locker Key"],
 }
 
 COMMON_COLORS = ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"]
@@ -97,14 +96,6 @@ CATEGORY_VERIFICATION_OPTIONS = {
         "Label / Writing": ["None", "Name", "Number", "Word", "Other"],
         "Damage / Mark": ["None", "Scratch", "Bent", "Other"],
     },
-    "Other": {
-        "Color": COMMON_COLORS,
-        "Brand": ["Other", "No visible brand"],
-        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
-        "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Name label", "Other"],
-        "Damage / Mark": ["None", "Scratch", "Crack", "Dent", "Stain", "Tear", "Scuff", "Other"],
-        "Pattern / Design": ["Plain", "Striped", "Checkered", "Character/cartoon", "Logo/graphic", "Text", "Other"],
-    },
 }
 
 # Legacy options let older reports continue to work.
@@ -155,10 +146,8 @@ def verification_selectors(prefix, selected_categories, item_category=""):
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
 
 BASE_DIR = Path(__file__).parent
-LOGO_URL = "https://rawdalsaleheen.edu.kw/wp-content/uploads/2023/09/logo.png"
 DATA_FILE = BASE_DIR / "rss_reports.csv"
 IMAGE_DIR = BASE_DIR / "rss_item_images"
-IMAGE_DIR.mkdir(exist_ok=True)
 
 BUILDINGS = ["Girls Building", "Boys Building", "Administration Building"]
 GRADE_LEVELS = ["High School", "Middle School", "Elementary School"]
@@ -172,7 +161,7 @@ GIRLS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Theatre Room", "Gym", "C
 BOYS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Ghaneema's Auditorium", "Gym", "Cafeteria", "Break Area"]
 ADMIN_LOCATIONS = ["Library", "Ms Razan Room", "Ms Heba Alodaid Room", "Lobby"]
 REPORT_COLUMNS = [
-    "ID", "Type", "Building", "ItemCategory", "GradeLevel", "Class", "ItemName",
+    "ID", "Type", "Building", "ItemCategory", "ItemType", "GradeLevel", "Class", "ItemName",
     "Description", "Location", "EventDate", "Email", "Photo", "VerificationQuestion", "VerificationAnswer", "VerificationData", "SubmittedAt"
 ]
 
@@ -226,7 +215,7 @@ textarea,
 .choice-title { text-align:center; color:var(--navy); font-size:1.55rem; font-weight:700; margin:30px 0 15px; }
 .helper { text-align:center; color:#667085; margin:-6px auto 20px; max-width:620px; }
 .success-box { padding:28px; border:1px solid #d8e7dd; border-radius:18px; text-align:center; background:#fbfefc; }
-.item-card { border:1px solid var(--line); border-radius:16px; padding:18px; margin:12px 0; background:#fff; }
+.item-card { border:1px solid var(--line); border-radius:16px; padding:18px; margin:12px 0; background:#fff; box-shadow:0 3px 12px rgba(16,42,82,.06); }
 .item-name { color:var(--navy); font-size:1.3rem; font-weight:700; margin-bottom:4px; }
 .item-meta { color:#667085; font-size:.95rem; margin-bottom:8px; }
 div.stButton > button { min-height:58px; border-radius:14px; font-size:1.05rem; font-weight:700; border:1px solid #102A52; background:#102A52 !important; color:#FFFFFF !important; }
@@ -371,7 +360,7 @@ def load_reports():
         return pd.DataFrame(columns=REPORT_COLUMNS)
     try:
         df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
-    except (pd.errors.EmptyDataError, pd.errors.ParserError):
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, OSError, UnicodeError):
         return pd.DataFrame(columns=REPORT_COLUMNS)
     for column in REPORT_COLUMNS:
         if column not in df.columns:
@@ -401,8 +390,12 @@ def save_report(report, uploaded_photo):
         ext = Path(uploaded_photo.name).suffix.lower()
         image_name = f"{uuid.uuid4().hex}{ext}"
         image_path = IMAGE_DIR / image_name
-        image_path.write_bytes(uploaded_photo.getbuffer())
-        report["Photo"] = str(image_path)
+        try:
+            IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+            image_path.write_bytes(uploaded_photo.getbuffer())
+            report["Photo"] = str(image_path)
+        except OSError:
+            report["Photo"] = ""
     else:
         report["Photo"] = ""
 
@@ -432,7 +425,7 @@ def resolve_report(report_id):
         return False
     try:
         df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
-    except (pd.errors.EmptyDataError, pd.errors.ParserError):
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, OSError, UnicodeError):
         return False
     if "ID" not in df.columns:
         return False
@@ -475,7 +468,6 @@ if "selected_item" not in st.session_state:
 
 st.markdown(f"""
 <div class="rss-header">
-    <img src="{LOGO_URL}" style="max-width:220px;width:42%;height:auto;margin:0 auto 10px;display:block;" alt="Rawd Al Saleheen School">
     <div class="rss-title">Rawd Al Saleheen School Lost & Found</div>
     <div style="margin-top:8px;color:#667085;font-size:15px;">Done by Nour O. Al Sultan</div>
 </div>
@@ -577,6 +569,9 @@ elif st.session_state.page == "item_detail":
         item_category = str(item.get("ItemCategory", "")).strip()
         if item_category:
             st.write(f'**Item category:** {item_category}')
+        item_type = str(item.get("ItemType", "")).strip()
+        if item_type:
+            st.write(f'**Item type:** {item_type}')
         place_label = "Last seen at" if is_lost_item else "Found at"
         date_label = "Date lost" if is_lost_item else "Date found"
         st.write(f'**{place_label}:** {item["Location"]}')
@@ -844,10 +839,11 @@ elif st.session_state.page == "form":
                 "Type": report_type,
                 "Building": building,
                 "ItemCategory": item_category,
+                "ItemType": item_type,
                 "GradeLevel": grade_level or "",
                 "Class": class_name.strip(),
                 "ItemName": item_name.strip(),
-                "Description": f"{item_type} — {description.strip()}",
+                "Description": description.strip(),
                 "Location": location.strip(),
                 "EventDate": event_date.isoformat(),
                 "Email": email.strip().lower(),
