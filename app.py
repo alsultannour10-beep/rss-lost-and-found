@@ -257,6 +257,7 @@ def load_reports():
 
 
 def save_report(report, uploaded_photo):
+    """Save a report safely, including reports created before new columns were added."""
     if uploaded_photo is not None:
         ext = Path(uploaded_photo.name).suffix.lower()
         image_name = f"{uuid.uuid4().hex}{ext}"
@@ -265,9 +266,14 @@ def save_report(report, uploaded_photo):
         report["Photo"] = str(image_path)
     else:
         report["Photo"] = ""
-    pd.DataFrame([report], columns=REPORT_COLUMNS).to_csv(
-        DATA_FILE, mode="a", header=not DATA_FILE.exists(), index=False
-    )
+
+    # Rewrite the small CSV in one pass instead of appending rows with a
+    # different number of columns. This keeps older reports compatible with
+    # Ownership Verification and avoids CSV parser/loading problems.
+    existing = load_reports()
+    new_row = pd.DataFrame([report], columns=REPORT_COLUMNS)
+    combined = pd.concat([existing, new_row], ignore_index=True)
+    combined[REPORT_COLUMNS].to_csv(DATA_FILE, index=False)
 
 
 def valid_rss_email(email):
@@ -655,3 +661,4 @@ elif st.session_state.page == "success":
     if st.button("Back to Home", use_container_width=True):
         go_home()
         st.rerun()
+\
