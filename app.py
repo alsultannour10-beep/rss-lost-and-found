@@ -6,37 +6,147 @@ import uuid
 import json
 
 
-VERIFICATION_OPTIONS = {
-    # Simple, non-overlapping categories used for NEW reports.
-    "Color": ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
-    "Brand": ["Apple", "Samsung", "Microsoft", "Lenovo", "HP", "Dell", "ASUS", "Acer", "Huawei", "Xiaomi", "Sony", "JBL", "Bose", "Logitech", "Casio", "Nike", "Adidas", "Puma", "Under Armour", "New Balance", "Converse", "Vans", "Stanley", "Hydro Flask", "Other", "No visible brand"],
-    "Case / Cover": ["No case/cover", "Black", "White", "Grey", "Clear/Transparent", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Multicolor", "Other"],
-    "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Name label", "School label", "Keychain/charm", "Decorative tape", "Other"],
-    "Damage / Mark": ["None", "Scratch", "Crack", "Dent", "Chip", "Stain", "Tear", "Scuff", "Missing part", "Writing/ink mark", "Other"],
-    "Name / Initials": ["No", "Yes - printed label", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
-    "Pattern / Design": ["Plain", "Striped", "Checkered", "Floral", "Geometric", "Camouflage", "Character/cartoon", "Logo/graphic", "Text/quote", "Multicolor pattern", "Other"],
-    "Something Attached": ["Nothing", "Charger/cable", "Stylus/pen", "Keyboard", "Mouse", "Strap/lanyard", "Keychain/charm", "Bottle lid/straw", "Pouch/bag", "Other"],
+ITEM_TYPES = {
+    "Electronics": ["Tablet", "Phone", "Laptop", "Headphones", "Earbuds", "Calculator", "Smartwatch", "Charger", "Other"],
+    "Water Bottle": ["Bottle", "Tumbler", "Thermos", "Flask", "Other"],
+    "Clothing": ["Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Pants", "Shorts", "Skirt", "Dress", "Uniform", "Other"],
+    "Bag": ["Backpack", "Handbag", "Sports Bag", "Tote Bag", "Pouch", "Other"],
+    "School Supplies": ["Pencil Case", "Pen", "Pencil", "Marker", "Ruler", "Eraser", "Scissors", "Other"],
+    "Book": ["Textbook", "Notebook", "Workbook", "Reading Book", "Folder", "Other"],
+    "Lunch Box": ["Lunch Box", "Food Container", "Snack Box", "Other"],
+    "Eyewear": ["Glasses", "Sunglasses", "Safety Glasses", "Other"],
+    "Jewelry": ["Ring", "Bracelet", "Necklace", "Earring", "Watch", "Other"],
+    "Keys": ["Single Key", "Key Set", "Key Card", "Other"],
+    "Sports Equipment": ["Ball", "Racket", "Glove", "Sports Bottle", "Protective Gear", "Other"],
+    "Other": ["Other"],
+}
 
-    # Legacy category names are kept only so reports created with the previous
-    # version can still be claimed. They are NOT offered for new reports.
-    "Primary color": ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
-    "Secondary color": ["None", "Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
+COMMON_COLORS = ["Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"]
+YES_NO = ["No", "Yes"]
+
+CATEGORY_VERIFICATION_OPTIONS = {
+    "Electronics": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Apple", "Samsung", "Microsoft", "Lenovo", "HP", "Dell", "ASUS", "Acer", "Huawei", "Xiaomi", "Sony", "JBL", "Bose", "Logitech", "Casio", "Other", "No visible brand"],
+        "Case / Cover": ["No case/cover", "Black", "White", "Grey", "Clear/Transparent", "Red", "Green", "Blue", "Navy", "Purple", "Pink", "Other"],
+        "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Name label", "School label", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Crack", "Dent", "Chip", "Scuff", "Missing part", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
+        "Accessory Attached": ["Nothing", "Charger/cable", "Stylus/pen", "Keyboard", "Mouse", "Strap", "Other"],
+    },
+    "Water Bottle": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Stanley", "Hydro Flask", "YETI", "Contigo", "Thermos", "Nike", "Adidas", "Other", "No visible brand"],
+        "Lid": ["Straw lid", "Flip lid", "Screw lid", "Spout lid", "Other"],
+        "Handle": YES_NO,
+        "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Name label", "School label", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Dent", "Stain", "Scuff", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
+        "Pattern / Design": ["Plain", "Striped", "Character/cartoon", "Logo/graphic", "Text", "Multicolor pattern", "Other"],
+    },
+    "Clothing": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Nike", "Adidas", "Puma", "Under Armour", "New Balance", "H&M", "Zara", "Other", "No visible brand"],
+        "Size": ["XS", "S", "M", "L", "XL", "XXL", "Kids size", "Other", "Unknown"],
+        "Pattern / Design": ["Plain", "Striped", "Checkered", "Floral", "Character/cartoon", "Logo/graphic", "Text", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - label", "Yes - other"],
+        "Damage / Mark": ["None", "Stain", "Tear", "Missing button", "Ink mark", "Other"],
+    },
+    "Bag": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Nike", "Adidas", "Puma", "Under Armour", "Herschel", "JanSport", "Other", "No visible brand"],
+        "Pattern / Design": ["Plain", "Striped", "Checkered", "Floral", "Character/cartoon", "Logo/graphic", "Text", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - label", "Yes - other"],
+        "Keychain / Charm": ["None", "One", "More than one", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Tear", "Stain", "Broken zip", "Other"],
+    },
+    "School Supplies": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Faber-Castell", "Staedtler", "Pilot", "BIC", "Sharpie", "Maped", "Other", "No visible brand"],
+        "Pattern / Design": ["Plain", "Character/cartoon", "Logo/graphic", "Text", "Multicolor pattern", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - sticker", "Yes - other"],
+        "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Crack", "Ink mark", "Missing part", "Other"],
+    },
+    "Book": {
+        "Color": COMMON_COLORS,
+        "Subject": ["Arabic", "English", "Math", "Science", "Islamic", "Social Studies", "Computer", "Other"],
+        "Name / Initials": ["No", "Yes - front", "Yes - inside", "Yes - back", "Yes - sticker", "Yes - other"],
+        "Cover": ["No extra cover", "Clear cover", "Colored cover", "Decorated cover", "Other"],
+        "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "School label", "Other"],
+        "Damage / Mark": ["None", "Bent corner", "Torn page", "Writing/ink", "Stain", "Other"],
+    },
+    "Lunch Box": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Sistema", "Thermos", "Bentgo", "Tupperware", "Other", "No visible brand"],
+        "Pattern / Design": ["Plain", "Character/cartoon", "Logo/graphic", "Text", "Multicolor pattern", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - sticker", "Yes - other"],
+        "Compartments": ["One", "Two", "Three", "Four or more", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Crack", "Stain", "Missing part", "Other"],
+    },
+    "Eyewear": {
+        "Frame Color": COMMON_COLORS,
+        "Brand": ["Ray-Ban", "Oakley", "Nike", "Adidas", "Other", "No visible brand"],
+        "Frame Shape": ["Round", "Oval", "Square", "Rectangle", "Cat-eye", "Other"],
+        "Case": ["No case", "Black", "Brown", "Blue", "Pink", "Clear/Transparent", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Crack", "Bent arm", "Missing part", "Other"],
+        "Name / Initials": ["No", "Yes", "Other"],
+    },
+    "Jewelry": {
+        "Color": COMMON_COLORS,
+        "Material / Look": ["Gold-colored", "Silver-colored", "Rose gold-colored", "Beaded", "Fabric", "Other"],
+        "Stone / Charm": ["None", "One stone", "Multiple stones", "Charm", "Other"],
+        "Name / Initials": ["No", "Yes - engraved", "Yes - charm", "Yes - other"],
+        "Damage / Mark": ["None", "Scratch", "Bent", "Broken clasp", "Missing part", "Other"],
+    },
+    "Keys": {
+        "Number of Keys": ["1", "2", "3", "4", "5 or more"],
+        "Keychain Color": COMMON_COLORS,
+        "Keychain / Charm": ["None", "Plain tag", "Character", "Letter/initial", "Logo", "Other"],
+        "Label / Writing": ["None", "Name", "Number", "Word", "Other"],
+        "Card Attached": YES_NO,
+    },
+    "Sports Equipment": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Nike", "Adidas", "Puma", "Wilson", "Spalding", "Molten", "Yonex", "Other", "No visible brand"],
+        "Size": ["Small", "Medium", "Large", "Other", "Unknown"],
+        "Pattern / Design": ["Plain", "Striped", "Logo/graphic", "Text", "Multicolor pattern", "Other"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - sticker", "Yes - other"],
+        "Damage / Mark": ["None", "Scratch", "Tear", "Stain", "Scuff", "Other"],
+    },
+    "Other": {
+        "Color": COMMON_COLORS,
+        "Brand": ["Other", "No visible brand"],
+        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
+        "Sticker / Decoration": ["None", "One sticker", "Multiple stickers", "Name label", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Crack", "Dent", "Stain", "Tear", "Scuff", "Other"],
+        "Pattern / Design": ["Plain", "Striped", "Checkered", "Character/cartoon", "Logo/graphic", "Text", "Other"],
+    },
+}
+
+# Legacy options let older reports continue to work.
+LEGACY_VERIFICATION_OPTIONS = {
+    "Primary color": COMMON_COLORS, "Secondary color": ["None"] + COMMON_COLORS,
     "Case or cover": ["No case/cover", "Soft case", "Hard case", "Folio/book case", "Keyboard case", "Sleeve/pouch", "Protective cover", "Other"],
-    "Case/cover color": ["No case/cover", "Black", "White", "Grey", "Silver", "Gold", "Red", "Orange", "Yellow", "Green", "Blue", "Navy", "Purple", "Pink", "Brown", "Beige", "Clear/Transparent", "Multicolor", "Other"],
+    "Case/cover color": ["No case/cover"] + COMMON_COLORS,
     "Pattern/design": ["Plain", "Striped", "Checkered", "Floral", "Geometric", "Camouflage", "Character/cartoon", "Logo/graphic", "Text/quote", "Multicolor pattern", "Other"],
     "Sticker/decoration": ["None", "One sticker", "Multiple stickers", "Name label", "School label", "Keychain/charm", "Decorative tape", "Other"],
     "Visible damage/mark": ["None", "Scratch", "Crack", "Dent", "Chip", "Stain", "Tear", "Scuff", "Missing part", "Writing/ink mark", "Other"],
-    "Where is the damage/mark?": ["No damage/mark", "Front", "Back", "Top", "Bottom", "Left side", "Right side", "Top-left corner", "Top-right corner", "Bottom-left corner", "Bottom-right corner", "Multiple areas", "Other"],
+    "Where is the damage/mark?": ["No damage/mark", "Front", "Back", "Top", "Bottom", "Left side", "Right side", "Multiple areas", "Other"],
     "Size": ["Very small", "Small", "Medium", "Large", "Very large", "Other"],
-    "Material": ["Plastic", "Metal", "Glass", "Fabric", "Leather", "Faux leather", "Rubber", "Silicone", "Wood", "Paper/cardboard", "Mixed materials", "Other"],
+    "Material": ["Plastic", "Metal", "Glass", "Fabric", "Leather", "Rubber", "Silicone", "Wood", "Paper/cardboard", "Mixed materials", "Other"],
     "Name/initials present": ["No", "Yes - printed label", "Yes - handwritten", "Yes - engraved", "Yes - sticker", "Yes - other"],
     "Accessory attached": ["None", "Charger/cable", "Stylus/pen", "Keyboard", "Mouse", "Strap/lanyard", "Keychain/charm", "Bottle lid/straw", "Pouch/bag", "Other"],
 }
 
-NEW_VERIFICATION_CATEGORIES = [
-    "Color", "Brand", "Case / Cover", "Sticker / Decoration",
-    "Damage / Mark", "Name / Initials", "Pattern / Design", "Something Attached",
-]
+def get_verification_options(item_category, detail):
+    if item_category in CATEGORY_VERIFICATION_OPTIONS and detail in CATEGORY_VERIFICATION_OPTIONS[item_category]:
+        return CATEGORY_VERIFICATION_OPTIONS[item_category][detail]
+    # Compatibility with the immediately previous version and older reports.
+    for options in CATEGORY_VERIFICATION_OPTIONS.values():
+        if detail in options:
+            return options[detail]
+    return LEGACY_VERIFICATION_OPTIONS.get(detail, ["Other"])
 
 def parse_verification_data(value):
     if not value or pd.isna(value):
@@ -47,11 +157,11 @@ def parse_verification_data(value):
     except (json.JSONDecodeError, TypeError, ValueError):
         return {}
 
-def verification_selectors(prefix, selected_categories):
-    """Render only the ownership categories selected for this item."""
+def verification_selectors(prefix, selected_categories, item_category=""):
+    """Render only the secret-detail questions selected for this item category."""
     answers = {}
     for category in selected_categories:
-        options = VERIFICATION_OPTIONS.get(category, ["Other"])
+        options = get_verification_options(item_category, category)
         answers[category] = st.selectbox(
             category,
             ["Select an answer"] + options,
@@ -488,6 +598,9 @@ elif st.session_state.page == "item_detail":
             st.write(f'**Grade Level:** {item["GradeLevel"]}')
         if item.get("Class"):
             st.write(f'**Class:** {item["Class"]}')
+        item_category = str(item.get("ItemCategory", "")).strip()
+        if item_category:
+            st.write(f'**Item category:** {item_category}')
         place_label = "Last seen at" if is_lost_item else "Found at"
         date_label = "Date lost" if is_lost_item else "Date found"
         st.write(f'**{place_label}:** {item["Location"]}')
@@ -513,7 +626,7 @@ elif st.session_state.page == "item_detail":
                 if attempts >= 3:
                     st.error("You have used 3 verification attempts. Please ask a teacher or staff member for help verifying this item.")
                 else:
-                    claim_answers = verification_selectors(f"claim_{item_id}", verification_data.keys())
+                    claim_answers = verification_selectors(f"claim_{item_id}", verification_data.keys(), str(item.get("ItemCategory", "")))
                     st.caption(f"Attempts remaining: {3 - attempts}")
                     if st.button("CHECK MY ANSWERS", use_container_width=True, key=f"verify_{item_id}"):
                         unanswered = [k for k, v in claim_answers.items() if v == "Select an answer"]
@@ -670,72 +783,97 @@ elif st.session_state.page == "form":
         else:
             location = location_choice or ""
 
-    with st.form("rss_report_form", clear_on_submit=False):
-        item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
-        description = st.text_area("Description *", placeholder="Describe the item generally, but do not reveal every unique identifying detail.", height=100)
-        verification_question = ""
-        verification_answer = ""
-        verification_data = {}
-        if report_type == "Found":
-            st.markdown("### Help Us Return It to the Right Person")
-            st.caption("Choose 3 to 5 secret details about the item. We recommend 4. Pick details the real owner would know. These answers stay hidden from the public listing.")
-            verification_categories = st.multiselect(
-                "Choose 3–5 secret details *",
-                options=NEW_VERIFICATION_CATEGORIES,
-                max_selections=5,
-                placeholder="Choose secret details",
-                help="Minimum 3, recommended 4, maximum 5.",
-            )
-            if verification_categories:
-                verification_data = verification_selectors("finder_verification", verification_categories)
-        event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
-        email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
-        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.")
-        submitted = st.form_submit_button("Submit Report", use_container_width=True)
+    st.markdown("### Item Details")
+    item_category = st.selectbox(
+        "Item category *",
+        list(ITEM_TYPES.keys()),
+        index=None,
+        placeholder="Select an item category",
+        help="Choose what kind of item this is. The next choices will be filtered to match it.",
+        key="report_item_category",
+    )
 
-        if submitted:
-            classroom_selected = location_choice == "Classroom" if building else False
-            missing_school_info = classroom_selected and (not grade_level or not class_name.strip())
-            missing_other_place = building and location_choice == "Other" and not custom_location.strip()
-            verification_count = len(verification_data)
-            missing_verification = report_type == "Found" and (
-                verification_count < 3
-                or verification_count > 5
-                or any(v == "Select an answer" for v in verification_data.values())
-            )
-            if not building or not location or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place or missing_verification:
-                if missing_verification:
-                    st.error("For a found item, choose 3 to 5 secret details and answer each one.")
-                else:
-                    st.error("Please complete all required fields.")
-            elif not valid_rss_email(email):
-                st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
+    item_type = ""
+    if item_category:
+        item_type = st.selectbox(
+            "Item type *",
+            ITEM_TYPES[item_category],
+            index=None,
+            placeholder="Select an item type",
+            key="report_item_type",
+        ) or ""
+
+    item_name = st.text_input("Item name *", placeholder="Example: Blue water bottle", key="report_item_name")
+    description = st.text_area(
+        "Description *",
+        placeholder="Describe the item generally, but do not reveal the secret details.",
+        height=100,
+        key="report_description",
+    )
+
+    verification_question = ""
+    verification_answer = ""
+    verification_data = {}
+    if report_type == "Found" and item_category:
+        st.markdown("### Help Us Return It to the Right Person")
+        st.caption("Choose 3 to 5 secret details. We recommend 4. You will only see details that make sense for this type of item. The answers stay hidden from the public listing.")
+        relevant_details = list(CATEGORY_VERIFICATION_OPTIONS[item_category].keys())
+        verification_categories = st.multiselect(
+            "Choose 3–5 secret details *",
+            options=relevant_details,
+            max_selections=5,
+            placeholder="Choose secret details",
+            help="Minimum 3, recommended 4, maximum 5. Each detail can only be chosen once.",
+            key="report_verification_categories",
+        )
+        if verification_categories:
+            verification_data = verification_selectors("finder_verification", verification_categories, item_category)
+
+    event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today(), key="report_event_date")
+    email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.", key="report_email")
+    photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.", key="report_photo")
+    submitted = st.button("Submit Report", use_container_width=True, key="submit_report")
+
+    if submitted:
+        classroom_selected = location_choice == "Classroom" if building else False
+        missing_school_info = classroom_selected and (not grade_level or not class_name.strip())
+        missing_other_place = building and location_choice == "Other" and not custom_location.strip()
+        verification_count = len(verification_data)
+        missing_verification = report_type == "Found" and (
+            verification_count < 3
+            or verification_count > 5
+            or any(v == "Select an answer" for v in verification_data.values())
+        )
+        if not building or not location or not item_category or not item_type or not item_name.strip() or not description.strip() or missing_school_info or missing_other_place or missing_verification:
+            if missing_verification:
+                st.error("For a found item, choose 3 to 5 secret details and answer each one.")
             else:
-                report = {
-                    "ID": uuid.uuid4().hex,
-                    "Type": report_type,
-                    "Building": building,
-                    "ItemCategory": "",
-                    "GradeLevel": grade_level or "",
-                    "Class": class_name.strip(),
-                    "ItemName": item_name.strip(),
-                    "Description": description.strip(),
-                    "Location": location.strip(),
-                    "EventDate": event_date.isoformat(),
-                    "Email": email.strip().lower(),
-                    "Photo": "",
-                    "VerificationQuestion": verification_question.strip(),
-                    "VerificationAnswer": verification_answer.strip(),
-                    "VerificationData": json.dumps(verification_data, ensure_ascii=False),
-                    "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
-                }
-                save_report(report, photo)
-                st.session_state.page = "success"
-                st.rerun()
+                st.error("Please complete all required fields.")
+        elif not valid_rss_email(email):
+            st.error("Please enter a valid RSS email ending with @rawdalsaleheen.edu.kw.")
+        else:
+            report = {
+                "ID": uuid.uuid4().hex,
+                "Type": report_type,
+                "Building": building,
+                "ItemCategory": item_category,
+                "GradeLevel": grade_level or "",
+                "Class": class_name.strip(),
+                "ItemName": item_name.strip(),
+                "Description": f"{item_type} — {description.strip()}",
+                "Location": location.strip(),
+                "EventDate": event_date.isoformat(),
+                "Email": email.strip().lower(),
+                "Photo": "",
+                "VerificationQuestion": verification_question.strip(),
+                "VerificationAnswer": verification_answer.strip(),
+                "VerificationData": json.dumps(verification_data, ensure_ascii=False),
+                "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
+            }
+            save_report(report, photo)
+            st.session_state.page = "success"
+            st.rerun()
 
-    if st.button("Back", use_container_width=True):
-        go_home()
-        st.rerun()
 
 elif st.session_state.page == "success":
     st.markdown("""
