@@ -7,17 +7,15 @@ import json
 
 
 ITEM_TYPES = {
-    "Electronics": ["Tablet", "Phone", "Laptop", "Headphones", "Earbuds", "Calculator", "Smartwatch", "Charger", "Other"],
-    "Water Bottle": ["Bottle", "Tumbler", "Thermos", "Flask", "Other"],
-    "Clothing": ["Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Pants", "Shorts", "Skirt", "Dress", "Uniform", "Other"],
+    "Electronics": ["Tablet", "Phone", "Laptop", "Headphones", "Calculator", "Smartwatch", "Charger", "Other"],
+    "Water Bottle": ["Bottle", "Tumbler", "Flask", "Other"],
+    "Clothing": ["Shirt", "T-Shirt", "Hoodie", "Sweater", "Jacket", "Pants", "Dress", "Uniform", "Other"],
     "Bag": ["Backpack", "Handbag", "Sports Bag", "Tote Bag", "Pouch", "Other"],
-    "School Supplies": ["Pencil Case", "Pen", "Pencil", "Marker", "Ruler", "Eraser", "Scissors", "Other"],
+    "School Supplies": ["Pencil Case", "Pen", "Ruler", "Scissors", "Other"],
     "Book": ["Textbook", "Notebook", "Workbook", "Reading Book", "Folder", "Other"],
     "Lunch Box": ["Lunch Box", "Food Container", "Snack Box", "Other"],
     "Eyewear": ["Glasses", "Sunglasses", "Safety Glasses", "Other"],
-    "Jewelry": ["Ring", "Bracelet", "Necklace", "Earring", "Watch", "Other"],
-    "Keys": ["Single Key", "Key Set", "Key Card", "Other"],
-    "Sports Equipment": ["Ball", "Racket", "Glove", "Sports Bottle", "Protective Gear", "Other"],
+    "Locker Keys": ["Locker Key", "Other"],
     "Other": ["Other"],
 }
 
@@ -92,27 +90,12 @@ CATEGORY_VERIFICATION_OPTIONS = {
         "Damage / Mark": ["None", "Scratch", "Crack", "Bent arm", "Missing part", "Other"],
         "Name / Initials": ["No", "Yes", "Other"],
     },
-    "Jewelry": {
-        "Color": COMMON_COLORS,
-        "Material / Look": ["Gold-colored", "Silver-colored", "Rose gold-colored", "Beaded", "Fabric", "Other"],
-        "Stone / Charm": ["None", "One stone", "Multiple stones", "Charm", "Other"],
-        "Name / Initials": ["No", "Yes - engraved", "Yes - charm", "Yes - other"],
-        "Damage / Mark": ["None", "Scratch", "Bent", "Broken clasp", "Missing part", "Other"],
-    },
-    "Keys": {
-        "Number of Keys": ["1", "2", "3", "4", "5 or more"],
+    "Locker Keys": {
+        "Key Color": COMMON_COLORS,
         "Keychain Color": COMMON_COLORS,
         "Keychain / Charm": ["None", "Plain tag", "Character", "Letter/initial", "Logo", "Other"],
         "Label / Writing": ["None", "Name", "Number", "Word", "Other"],
-        "Card Attached": YES_NO,
-    },
-    "Sports Equipment": {
-        "Color": COMMON_COLORS,
-        "Brand": ["Nike", "Adidas", "Puma", "Wilson", "Spalding", "Molten", "Yonex", "Other", "No visible brand"],
-        "Size": ["Small", "Medium", "Large", "Other", "Unknown"],
-        "Pattern / Design": ["Plain", "Striped", "Logo/graphic", "Text", "Multicolor pattern", "Other"],
-        "Name / Initials": ["No", "Yes - printed", "Yes - handwritten", "Yes - sticker", "Yes - other"],
-        "Damage / Mark": ["None", "Scratch", "Tear", "Stain", "Scuff", "Other"],
+        "Damage / Mark": ["None", "Scratch", "Bent", "Other"],
     },
     "Other": {
         "Color": COMMON_COLORS,
