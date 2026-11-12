@@ -3,6 +3,9 @@ import pandas as pd
 from datetime import date, datetime
 from pathlib import Path
 import uuid
+import hashlib
+import hmac
+import time
 
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
 
@@ -275,6 +278,17 @@ def valid_rss_email(email):
     return email.endswith("@rawdalsaleheen.edu.kw") and len(email.split("@", 1)[0]) > 0
 
 
+# Password verification for the resolve action only. No password is stored in plain text.
+_RESOLVE_SALT = 'rss-resolve-v1-2026'
+_RESOLVE_PASSWORD_HASH = 'a1aa1cecd176b33cd87b3d6b93bd466871749930deaa67d3f88f7950d5dbe0eb'
+
+def valid_resolve_password(password):
+    candidate = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), _RESOLVE_SALT.encode("utf-8"), 310000
+    )
+    return hmac.compare_digest(candidate, bytes.fromhex(_RESOLVE_PASSWORD_HASH))
+
+
 def resolve_report(report_id):
     """Remove a resolved report from the active listings and delete its saved photo."""
     if not DATA_FILE.exists():
@@ -438,9 +452,33 @@ elif st.session_state.page == "item_detail":
         st.markdown("### Item returned?")
         item_id = str(item.get("ID", ""))
         confirm_key = f"confirm_resolve_{item_id}"
+        verified_key = f"verified_resolve_{item_id}"
+        attempts_key = f"resolve_attempts_{item_id}"
+        lock_key = f"resolve_locked_until_{item_id}"
 
-        if not st.session_state.get(confirm_key, False):
-            st.markdown('<div class="helper">If this item has been returned to its owner, mark the report as resolved to remove it from the active listings.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="helper">If this item has been returned to its owner, mark the report as resolved to remove it from the active listings.</div>', unsafe_allow_html=True)
+
+        if not st.session_state.get(verified_key, False):
+            with st.form(f"resolve_password_form_{item_id}"):
+                resolve_password = st.text_input("Administrator password", type="password", key=f"resolve_password_{item_id}")
+                unlock = st.form_submit_button("UNLOCK MARK AS RESOLVED", use_container_width=True)
+            if unlock:
+                if time.time() < st.session_state.get(lock_key, 0):
+                    st.error("Too many attempts. Please wait 5 minutes before trying again.")
+                elif valid_resolve_password(resolve_password):
+                    st.session_state[verified_key] = True
+                    st.session_state[attempts_key] = 0
+                    st.rerun()
+                else:
+                    attempts = st.session_state.get(attempts_key, 0) + 1
+                    st.session_state[attempts_key] = attempts
+                    if attempts >= 5:
+                        st.session_state[lock_key] = time.time() + 300
+                        st.session_state[attempts_key] = 0
+                        st.error("Too many attempts. Please wait 5 minutes before trying again.")
+                    else:
+                        st.error("Incorrect administrator password.")
+        elif not st.session_state.get(confirm_key, False):
             if st.button("MARK AS RESOLVED", use_container_width=True, key=f"resolve_start_{item_id}"):
                 st.session_state[confirm_key] = True
                 st.rerun()
@@ -449,8 +487,10 @@ elif st.session_state.page == "item_detail":
             confirm_col, cancel_col = st.columns(2)
             with confirm_col:
                 if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
-                    if resolve_report(item_id):
+                    # Verify the per-item unlock state before allowing deletion.
+                    if st.session_state.get(verified_key, False) and resolve_report(item_id):
                         st.session_state.pop(confirm_key, None)
+                        st.session_state.pop(verified_key, None)
                         st.session_state.selected_item = None
                         st.session_state.page = "resolved"
                         st.rerun()
@@ -459,6 +499,7 @@ elif st.session_state.page == "item_detail":
             with cancel_col:
                 if st.button("CANCEL", use_container_width=True, key=f"resolve_cancel_{item_id}"):
                     st.session_state.pop(confirm_key, None)
+                    st.session_state.pop(verified_key, None)
                     st.rerun()
 
     back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
