@@ -16,6 +16,11 @@ DATA_FILE = BASE_DIR / "rss_reports.csv"
 IMAGE_DIR = BASE_DIR / "rss_item_images"
 IMAGE_DIR.mkdir(exist_ok=True)
 
+# SECURITY: Fail closed until school-managed Microsoft 365 authentication,
+# Azure storage, and administrator review are configured and tested.
+SECURE_BACKEND_READY = False
+
+
 BUILDINGS = ["Girls Building", "Boys Building", "Administration Building"]
 GRADE_LEVELS = ["High School", "Middle School", "Elementary School"]
 GIRLS_HIGH_SCHOOL = ["9K", "9L", "10K", "10L", "11K", "11L", "12K", "12L"]
@@ -275,6 +280,8 @@ def save_report(report, uploaded_photo):
 
 
 def notify_admin_of_report(report):
+    if not SECURE_BACKEND_READY:
+        return False
     """Send a transactional notification using Brevo; never expose the API key."""
     # Trim accidental spaces/newlines from Streamlit Secrets values.
     api_key = str(st.secrets.get("BREVO_API_KEY", "")).strip()
@@ -285,17 +292,13 @@ def notify_admin_of_report(report):
         logging.error("Brevo notification not configured in Streamlit Secrets.")
         return False
 
+    # Privacy-safe alert: no student identifiers, free-text, class or report ID.
     body = (
-        f"A new {report['Type']} item report was submitted to RSS Lost & Found.\n\n"
-        f"Item: {report['ItemName']}\n"
+        f"A new {report['Type']} item report requires administrator review.\n\n"
         f"Building: {report['Building']}\n"
-        f"Place: {report['Location']}\n"
-        f"Grade level: {report['GradeLevel']}\n"
-        f"Class: {report['Class']}\n"
-        f"Date: {report['EventDate']}\n"
-        f"Description: {report['Description']}\n"
-        f"Student email: {report['Email']}\n"
-        f"Report ID: {report['ID']}\n"
+        "Status: Pending review\n\n"
+        "Review the report in the authorized RSS Lost & Found dashboard "
+        "once school Microsoft 365 access is enabled.\n"
     )
     payload = {
         "sender": {"name": "RSS Lost & Found", "email": sender_email},
@@ -341,6 +344,8 @@ def valid_rss_email(email):
 
 
 def resolve_report(report_id):
+    if not SECURE_BACKEND_READY:
+        return False
     """Remove a resolved report from the active listings and delete its saved photo."""
     if not DATA_FILE.exists():
         return False
@@ -394,6 +399,8 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 if st.session_state.page == "home":
+    if not SECURE_BACKEND_READY:
+        st.info("Security upgrade in progress: public browsing is limited, and new submissions are temporarily paused until the school's verified sign-in and protected storage are ready.")
     st.markdown('<div class="choice-title">What would you like to do?</div>', unsafe_allow_html=True)
     st.markdown('<div class="helper">If you lost something, check the found items first. Someone may have already reported it.</div>', unsafe_allow_html=True)
     if st.button("I LOST AN ITEM", use_container_width=True):
@@ -415,7 +422,7 @@ if st.session_state.page == "home":
 elif st.session_state.page == "found_items":
     st.markdown('<div class="choice-title">Found Items</div>', unsafe_allow_html=True)
     st.markdown('<div class="helper">Look through items that have already been found before submitting a lost-item report.</div>', unsafe_allow_html=True)
-    reports = load_reports()
+    reports = pd.DataFrame(columns=REPORT_COLUMNS)  # No legacy reports are approved for publication
     found = reports[reports["Type"].str.lower() == "found"].copy() if not reports.empty else reports
     search = st.text_input("Search found items")
     if search and not found.empty:
@@ -443,7 +450,7 @@ elif st.session_state.page == "found_items":
 elif st.session_state.page == "missing_items":
     st.markdown('<div class="choice-title">Missing Items</div>', unsafe_allow_html=True)
     st.markdown('<div class="helper">These are items students have reported missing. If you recognize or found one, open the report to contact the student.</div>', unsafe_allow_html=True)
-    reports = load_reports()
+    reports = pd.DataFrame(columns=REPORT_COLUMNS)  # No legacy reports are approved for publication
     missing = reports[reports["Type"].str.lower() == "lost"].copy() if not reports.empty else reports
     search = st.text_input("Search missing items")
     if search and not missing.empty:
@@ -470,64 +477,10 @@ elif st.session_state.page == "missing_items":
         st.rerun()
 
 elif st.session_state.page == "item_detail":
-    item = st.session_state.selected_item
-    if not item:
-        st.session_state.page = "found_items"
-        st.rerun()
-    contact_email = str(item.get("Email", "")).strip()
-    is_lost_item = str(item.get("Type", "")).strip().lower() == "lost"
-    if contact_email:
-        st.markdown(f'<div class="choice-title">{item["ItemName"]}</div>', unsafe_allow_html=True)
-        photo_path = item.get("Photo", "")
-        if photo_path and Path(photo_path).exists():
-            st.image(photo_path, use_container_width=True)
-        st.write(f'**Building:** {item["Building"]}')
-        if item.get("GradeLevel"):
-            st.write(f'**Grade Level:** {item["GradeLevel"]}')
-        if item.get("Class"):
-            st.write(f'**Class:** {item["Class"]}')
-        place_label = "Last seen at" if is_lost_item else "Found at"
-        date_label = "Date lost" if is_lost_item else "Date found"
-        st.write(f'**{place_label}:** {item["Location"]}')
-        st.write(f'**{date_label}:** {item["EventDate"]}')
-        st.write(f'**Description:** {item["Description"]}')
-        if is_lost_item:
-            st.markdown("### I Found This Item")
-            st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
-        else:
-            st.markdown("### Contact the finder")
-            st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
-
-    if contact_email:
-        st.markdown("### Item returned?")
-        item_id = str(item.get("ID", ""))
-        confirm_key = f"confirm_resolve_{item_id}"
-
-        if not st.session_state.get(confirm_key, False):
-            st.markdown('<div class="helper">If this item has been returned to its owner, mark the report as resolved to remove it from the active listings.</div>', unsafe_allow_html=True)
-            if st.button("MARK AS RESOLVED", use_container_width=True, key=f"resolve_start_{item_id}"):
-                st.session_state[confirm_key] = True
-                st.rerun()
-        else:
-            st.markdown('<div style="background:#D1D5DB; color:#FFFFFF; padding:0.85rem 1rem; border-radius:8px; font-weight:700; margin:0.5rem 0 1rem 0;">Are you sure this item has been returned to its owner?</div>', unsafe_allow_html=True)
-            confirm_col, cancel_col = st.columns(2)
-            with confirm_col:
-                if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
-                    if resolve_report(item_id):
-                        st.session_state.pop(confirm_key, None)
-                        st.session_state.selected_item = None
-                        st.session_state.page = "resolved"
-                        st.rerun()
-                    else:
-                        st.error("This report could not be removed. Please try again.")
-            with cancel_col:
-                if st.button("CANCEL", use_container_width=True, key=f"resolve_cancel_{item_id}"):
-                    st.session_state.pop(confirm_key, None)
-                    st.rerun()
-
-    back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
-    if st.button(back_label, use_container_width=True):
-        st.session_state.page = "missing_items" if is_lost_item else "found_items"
+    st.markdown('<div class="choice-title">Item Details</div>', unsafe_allow_html=True)
+    st.info("Private item details and ownership claims will be available after verified Microsoft 365 sign-in and administrator review are activated.")
+    if st.button("Back to Home", use_container_width=True, key="detail_home"):
+        go_home()
         st.rerun()
 
 elif st.session_state.page == "resolved":
@@ -543,6 +496,12 @@ elif st.session_state.page == "resolved":
         st.rerun()
 
 elif st.session_state.page == "form":
+    if not SECURE_BACKEND_READY:
+        st.warning("New reports are temporarily unavailable while verified Microsoft 365 sign-in and private Azure storage are being configured. Please contact the school office directly for lost or found items.")
+        if st.button("Back to Home", use_container_width=True):
+            go_home()
+            st.rerun()
+        st.stop()
     report_type = st.session_state.report_type
     action = "lost" if report_type == "Lost" else "found"
     st.markdown(f'<div class="choice-title">Report a {report_type} Item</div>', unsafe_allow_html=True)
