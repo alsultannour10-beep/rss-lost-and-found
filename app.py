@@ -3,13 +3,6 @@ import pandas as pd
 from datetime import date, datetime
 from pathlib import Path
 import uuid
-import json
-import logging
-import hmac
-import html
-from PIL import Image, UnidentifiedImageError
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
 
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
 
@@ -32,7 +25,7 @@ BOYS_SPECIAL_LOCATIONS = ["Computer Lab", "Art Room", "Ghaneema's Auditorium", "
 ADMIN_LOCATIONS = ["Library", "Ms Razan Room", "Ms Heba Alodaid Room", "Lobby"]
 REPORT_COLUMNS = [
     "ID", "Type", "Building", "ItemCategory", "GradeLevel", "Class", "ItemName",
-    "Description", "Location", "EventDate", "Email", "Photo", "SubmittedAt", "Status"
+    "Description", "Location", "EventDate", "Email", "Photo", "SubmittedAt"
 ]
 
 st.markdown("""
@@ -260,20 +253,11 @@ def load_reports():
         except OSError:
             pass
 
-    # Existing reports require manual review before public display.
     return df[REPORT_COLUMNS]
 
 
 def save_report(report, uploaded_photo):
     if uploaded_photo is not None:
-        if uploaded_photo.size > 5 * 1024 * 1024:
-            raise ValueError("Photo must be under 5 MB")
-        try:
-            image = Image.open(uploaded_photo)
-            image.verify()
-            uploaded_photo.seek(0)
-        except (UnidentifiedImageError, OSError, ValueError):
-            raise ValueError("Invalid image file")
         ext = Path(uploaded_photo.name).suffix.lower()
         image_name = f"{uuid.uuid4().hex}{ext}"
         image_path = IMAGE_DIR / image_name
@@ -281,63 +265,9 @@ def save_report(report, uploaded_photo):
         report["Photo"] = str(image_path)
     else:
         report["Photo"] = ""
-    existing = load_reports()
-    pd.concat([existing, pd.DataFrame([report], columns=REPORT_COLUMNS)], ignore_index=True).to_csv(
-        DATA_FILE, index=False
+    pd.DataFrame([report], columns=REPORT_COLUMNS).to_csv(
+        DATA_FILE, mode="a", header=not DATA_FILE.exists(), index=False
     )
-
-
-def notify_admin_of_report(report):
-    """Send a transactional notification using Brevo; never expose the API key."""
-    # Trim accidental spaces/newlines from Streamlit Secrets values.
-    api_key = str(st.secrets.get("BREVO_API_KEY", "")).strip()
-    sender_email = str(st.secrets.get("BREVO_SENDER_EMAIL", "")).strip()
-    admin_email = str(st.secrets.get("BREVO_ADMIN_EMAIL", "")).strip()
-
-    if not all([api_key, sender_email, admin_email]) or api_key == "YOUR_PRIVATE_API_KEY":
-        logging.error("Brevo notification not configured in Streamlit Secrets.")
-        return False
-
-    body = (
-        f"A new {report['Type']} item report awaits administrator approval.\n\n"
-        f"Report ID: {report['ID']}\n"
-    )
-    payload = {
-        "sender": {"name": "RSS Lost & Found", "email": sender_email},
-        "to": [{"email": admin_email}],
-        "subject": f"RSS Lost & Found: New {report['Type']} Item Report",
-        "textContent": body,
-    }
-    request = Request(
-        "https://api.brevo.com/v3/smtp/email",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"api-key": api_key, "Content-Type": "application/json", "accept": "application/json"},
-        method="POST",
-    )
-    try:
-        with urlopen(request, timeout=12) as response:
-            return response.status in (200, 201, 202)
-    except HTTPError as exc:
-        # Brevo returns a JSON body with an error code and message. Never log
-        # the API key, HTTP request headers, or any submitted student data.
-        try:
-            error_data = json.loads(exc.read(4096).decode("utf-8", errors="replace"))
-            brevo_code = str(error_data.get("code", "unknown"))[:100]
-            brevo_message = str(error_data.get("message", "No message"))[:300]
-            # Avoid logging unexpected response content containing credentials.
-            for secret in (api_key, sender_email, admin_email):
-                if secret:
-                    brevo_code = brevo_code.replace(secret, "[REDACTED]")
-                    brevo_message = brevo_message.replace(secret, "[REDACTED]")
-            logging.error(
-                "Brevo email rejected: HTTP %s; Brevo code=%s; message=%s",
-                exc.code, brevo_code, brevo_message,
-            )
-        except (ValueError, UnicodeError, OSError, AttributeError):
-            logging.error("Brevo email rejected: HTTP %s; response was not valid JSON", exc.code)
-    except (URLError, TimeoutError, OSError) as exc:
-        logging.error("Brevo notification connection failed: %s", type(exc).__name__)
-    return False
 
 
 def valid_rss_email(email):
@@ -378,31 +308,6 @@ def resolve_report(report_id):
     return True
 
 
-def admin_password_configured():
-    return bool(str(st.secrets.get("RSS_ADMIN_PASSWORD", "")).strip())
-
-
-def is_admin():
-    return admin_password_configured() and bool(st.session_state.get("rss_admin_authenticated", False))
-
-
-def update_report_status(report_id, status):
-    if not is_admin() or status not in ("Approved", "Rejected"):
-        return False
-    df = load_reports()
-    mask = df["ID"].astype(str) == str(report_id)
-    if not mask.any():
-        return False
-    df.loc[mask, "Status"] = status
-    df.to_csv(DATA_FILE, index=False)
-    return True
-
-
-def public_reports():
-    df = load_reports()
-    return df.loc[df["Status"].eq("Approved")].copy()
-
-
 def go_home():
     st.session_state.page = "home"
     st.session_state.report_type = None
@@ -420,6 +325,7 @@ st.markdown(f"""
 <div class="rss-header">
     <img src="data:image/jpeg;base64,{LOGO_DATA}" style="max-width:220px;width:42%;height:auto;margin:0 auto 10px;display:block;">
     <div class="rss-title">Rawd Al Saleheen School Lost & Found</div>
+    <div style="margin-top:8px;color:#667085;font-size:15px;">Done by Nour O. Al Sultan</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -441,67 +347,11 @@ if st.session_state.page == "home":
     if st.button("BROWSE MISSING ITEMS", use_container_width=True):
         st.session_state.page = "missing_items"
         st.rerun()
-    if st.button("ADMINISTRATOR", use_container_width=True):
-        st.session_state.page = "admin"
-        st.rerun()
-
-elif st.session_state.page == "admin":
-    st.markdown('<div class="choice-title">Administrator</div>', unsafe_allow_html=True)
-    if not admin_password_configured():
-        st.error("Admin login is disabled until RSS_ADMIN_PASSWORD is set in Streamlit Secrets.")
-    elif not is_admin():
-        with st.form("admin_login"):
-            password = st.text_input("Administrator password", type="password")
-            login = st.form_submit_button("Sign in")
-        if login:
-            if st.session_state.get("rss_failed_logins", 0) >= 5:
-                st.error("Too many attempts in this session. Close this browser session and contact the administrator.")
-                st.stop()
-            expected = str(st.secrets.get("RSS_ADMIN_PASSWORD", ""))
-            if hmac.compare_digest(password, expected):
-                st.session_state.rss_failed_logins = 0
-                st.session_state.rss_admin_authenticated = True
-                st.rerun()
-            else:
-                st.session_state.rss_failed_logins = st.session_state.get("rss_failed_logins", 0) + 1
-                st.error("Invalid password")
-    else:
-        if st.button("Sign out"):
-            st.session_state.rss_admin_authenticated = False
-            st.rerun()
-        reports = load_reports().sort_values("SubmittedAt", ascending=False)
-        if reports.empty:
-            st.info("No reports yet")
-        for _, report in reports.iterrows():
-            rid = str(report["ID"])
-            with st.expander(f'{report["Type"]}: {report["ItemName"]} — {report["Status"] or "Pending"}'):
-                st.write(f'**Reporter:** {report["Email"]}')
-                st.write(f'**Building / place:** {report["Building"]} / {report["Location"]}')
-                st.write(f'**Description:** {report["Description"]}')
-                if report["Photo"] and Path(report["Photo"]).is_file():
-                    st.image(report["Photo"], width=250)
-                if report["Status"] != "Approved" and st.button("Approve for public listing", key=f"approve_{rid}"):
-                    update_report_status(rid, "Approved")
-                    st.rerun()
-                if report["Status"] != "Rejected" and st.button("Reject / hide", key=f"reject_{rid}"):
-                    update_report_status(rid, "Rejected")
-                    st.rerun()
-                if st.button("Close and remove report", key=f"close_{rid}"):
-                    st.session_state[f"close_confirm_{rid}"] = True
-                if st.session_state.get(f"close_confirm_{rid}"):
-                    st.warning("Confirm permanent deletion of this report and its photo")
-                    if st.button("Confirm deletion", key=f"delete_{rid}"):
-                        resolve_report(rid)
-                        st.session_state.pop(f"close_confirm_{rid}", None)
-                        st.rerun()
-    if st.button("Back to Home", key="admin_home"):
-        go_home()
-        st.rerun()
 
 elif st.session_state.page == "found_items":
     st.markdown('<div class="choice-title">Found Items</div>', unsafe_allow_html=True)
     st.markdown('<div class="helper">Look through items that have already been found before submitting a lost-item report.</div>', unsafe_allow_html=True)
-    reports = public_reports()
+    reports = load_reports()
     found = reports[reports["Type"].str.lower() == "found"].copy() if not reports.empty else reports
     search = st.text_input("Search found items")
     if search and not found.empty:
@@ -512,7 +362,7 @@ elif st.session_state.page == "found_items":
     else:
         found = found.sort_values("SubmittedAt", ascending=False)
         for _, row in found.iterrows():
-            st.markdown(f'<div class="item-card"><div class="item-name">{html.escape(str(row["ItemName"]))}</div><div class="item-meta">{html.escape(str(row["Building"]))} | {html.escape(str(row["Location"]))}</div><div>{html.escape(str(row["Description"]))}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
             if st.button("View Item / Contact Finder", key=f'view_{row["ID"]}', use_container_width=True):
                 st.session_state.selected_item = row.to_dict()
                 st.session_state.page = "item_detail"
@@ -529,7 +379,7 @@ elif st.session_state.page == "found_items":
 elif st.session_state.page == "missing_items":
     st.markdown('<div class="choice-title">Missing Items</div>', unsafe_allow_html=True)
     st.markdown('<div class="helper">These are items students have reported missing. If you recognize or found one, open the report to contact the student.</div>', unsafe_allow_html=True)
-    reports = public_reports()
+    reports = load_reports()
     missing = reports[reports["Type"].str.lower() == "lost"].copy() if not reports.empty else reports
     search = st.text_input("Search missing items")
     if search and not missing.empty:
@@ -540,7 +390,7 @@ elif st.session_state.page == "missing_items":
     else:
         missing = missing.sort_values("SubmittedAt", ascending=False)
         for _, row in missing.iterrows():
-            st.markdown(f'<div class="item-card"><div class="item-name">{html.escape(str(row["ItemName"]))}</div><div class="item-meta">{html.escape(str(row["Building"]))} | {html.escape(str(row["Location"]))}</div><div>{html.escape(str(row["Description"]))}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
             if st.button("View Missing Item / I Found This", key=f'missing_{row["ID"]}', use_container_width=True):
                 st.session_state.selected_item = row.to_dict()
                 st.session_state.page = "item_detail"
@@ -557,27 +407,59 @@ elif st.session_state.page == "missing_items":
 
 elif st.session_state.page == "item_detail":
     item = st.session_state.selected_item
-    approved = public_reports()
-    if item and not approved["ID"].eq(str(item.get("ID", ""))).any():
-        item = None
     if not item:
         st.session_state.page = "found_items"
         st.rerun()
-    # Public pages never expose reporter email or allow report deletion.
+    contact_email = str(item.get("Email", "")).strip()
     is_lost_item = str(item.get("Type", "")).strip().lower() == "lost"
-    st.markdown(f'<div class="choice-title">{html.escape(str(item["ItemName"]))}</div>', unsafe_allow_html=True)
-    photo_path = str(item.get("Photo", ""))
-    if photo_path and Path(photo_path).is_file():
-        st.image(photo_path, use_container_width=True)
-    st.write(f'**Building:** {item["Building"]}')
-    if item.get("GradeLevel"):
-        st.write(f'**Grade Level:** {item["GradeLevel"]}')
-    if item.get("Class"):
-        st.write(f'**Class:** {item["Class"]}')
-    st.write(f'**{"Last seen at" if is_lost_item else "Found at"}:** {item["Location"]}')
-    st.write(f'**{"Date lost" if is_lost_item else "Date found"}:** {item["EventDate"]}')
-    st.write(f'**Description:** {item["Description"]}')
-    st.info("To claim or return this item, contact the school administrator. Student contact details are private.")
+    if contact_email:
+        st.markdown(f'<div class="choice-title">{item["ItemName"]}</div>', unsafe_allow_html=True)
+        photo_path = item.get("Photo", "")
+        if photo_path and Path(photo_path).exists():
+            st.image(photo_path, use_container_width=True)
+        st.write(f'**Building:** {item["Building"]}')
+        if item.get("GradeLevel"):
+            st.write(f'**Grade Level:** {item["GradeLevel"]}')
+        if item.get("Class"):
+            st.write(f'**Class:** {item["Class"]}')
+        place_label = "Last seen at" if is_lost_item else "Found at"
+        date_label = "Date lost" if is_lost_item else "Date found"
+        st.write(f'**{place_label}:** {item["Location"]}')
+        st.write(f'**{date_label}:** {item["EventDate"]}')
+        st.write(f'**Description:** {item["Description"]}')
+        if is_lost_item:
+            st.markdown("### I Found This Item")
+            st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown("### Contact the finder")
+            st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+
+    if contact_email:
+        st.markdown("### Item returned?")
+        item_id = str(item.get("ID", ""))
+        confirm_key = f"confirm_resolve_{item_id}"
+
+        if not st.session_state.get(confirm_key, False):
+            st.markdown('<div class="helper">If this item has been returned to its owner, mark the report as resolved to remove it from the active listings.</div>', unsafe_allow_html=True)
+            if st.button("MARK AS RESOLVED", use_container_width=True, key=f"resolve_start_{item_id}"):
+                st.session_state[confirm_key] = True
+                st.rerun()
+        else:
+            st.markdown('<div style="background:#D1D5DB; color:#FFFFFF; padding:0.85rem 1rem; border-radius:8px; font-weight:700; margin:0.5rem 0 1rem 0;">Are you sure this item has been returned to its owner?</div>', unsafe_allow_html=True)
+            confirm_col, cancel_col = st.columns(2)
+            with confirm_col:
+                if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
+                    if resolve_report(item_id):
+                        st.session_state.pop(confirm_key, None)
+                        st.session_state.selected_item = None
+                        st.session_state.page = "resolved"
+                        st.rerun()
+                    else:
+                        st.error("This report could not be removed. Please try again.")
+            with cancel_col:
+                if st.button("CANCEL", use_container_width=True, key=f"resolve_cancel_{item_id}"):
+                    st.session_state.pop(confirm_key, None)
+                    st.rerun()
 
     back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
     if st.button(back_label, use_container_width=True):
@@ -703,14 +585,8 @@ elif st.session_state.page == "form":
                     "Email": email.strip().lower(),
                     "Photo": "",
                     "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
-                    "Status": "Pending",
                 }
-                try:
-                    save_report(report, photo)
-                except (ValueError, OSError) as exc:
-                    st.error(str(exc))
-                    st.stop()
-                st.session_state.notification_sent = notify_admin_of_report(report)
+                save_report(report, photo)
                 st.session_state.page = "success"
                 st.rerun()
 
@@ -722,11 +598,9 @@ elif st.session_state.page == "success":
     st.markdown("""
     <div class="success-box">
         <h2 style="color:#102a52;margin-top:0;">Report Submitted</h2>
-        <p style="color:#667085;margin-bottom:0;">Your report has been submitted for administrator review.</p>
+        <p style="color:#667085;margin-bottom:0;">Your report has been recorded.</p>
     </div>
     """, unsafe_allow_html=True)
-    if not st.session_state.get("notification_sent", False):
-        st.warning("Your report was saved, but the administrator email could not be sent. Please notify the school administrator.")
     st.write("")
     if st.button("Back to Home", use_container_width=True):
         go_home()
