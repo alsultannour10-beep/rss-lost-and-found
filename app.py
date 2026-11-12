@@ -3,6 +3,10 @@ import pandas as pd
 from datetime import date, datetime
 from pathlib import Path
 import uuid
+import json
+import logging
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
 
@@ -268,6 +272,50 @@ def save_report(report, uploaded_photo):
     pd.DataFrame([report], columns=REPORT_COLUMNS).to_csv(
         DATA_FILE, mode="a", header=not DATA_FILE.exists(), index=False
     )
+
+
+def notify_admin_of_report(report):
+    """Send a transactional notification using Brevo; never expose the API key."""
+    api_key = st.secrets.get("BREVO_API_KEY", "")
+    sender_email = st.secrets.get("BREVO_SENDER_EMAIL", "")
+    admin_email = st.secrets.get("BREVO_ADMIN_EMAIL", "")
+
+    if not all([api_key, sender_email, admin_email]) or api_key == "YOUR_PRIVATE_API_KEY":
+        logging.error("Brevo notification not configured in Streamlit Secrets.")
+        return False
+
+    body = (
+        f"A new {report['Type']} item report was submitted to RSS Lost & Found.\n\n"
+        f"Item: {report['ItemName']}\n"
+        f"Building: {report['Building']}\n"
+        f"Place: {report['Location']}\n"
+        f"Grade level: {report['GradeLevel']}\n"
+        f"Class: {report['Class']}\n"
+        f"Date: {report['EventDate']}\n"
+        f"Description: {report['Description']}\n"
+        f"Student email: {report['Email']}\n"
+        f"Report ID: {report['ID']}\n"
+    )
+    payload = {
+        "sender": {"name": "RSS Lost & Found", "email": sender_email},
+        "to": [{"email": admin_email}],
+        "subject": f"RSS Lost & Found: New {report['Type']} Item Report",
+        "textContent": body,
+    }
+    request = Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"api-key": api_key, "Content-Type": "application/json", "accept": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=12) as response:
+            return response.status in (200, 201, 202)
+    except HTTPError as exc:
+        logging.error("Brevo rejected notification (HTTP %s). Check verified sender and API/IP permissions.", exc.code)
+    except (URLError, TimeoutError, OSError) as exc:
+        logging.error("Brevo notification connection failed: %s", type(exc).__name__)
+    return False
 
 
 def valid_rss_email(email):
@@ -586,6 +634,7 @@ elif st.session_state.page == "form":
                     "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
                 }
                 save_report(report, photo)
+                st.session_state.notification_sent = notify_admin_of_report(report)
                 st.session_state.page = "success"
                 st.rerun()
 
@@ -600,6 +649,8 @@ elif st.session_state.page == "success":
         <p style="color:#667085;margin-bottom:0;">Your report has been recorded.</p>
     </div>
     """, unsafe_allow_html=True)
+    if not st.session_state.get("notification_sent", False):
+        st.warning("Your report was saved, but the administrator email could not be sent. Please notify the school administrator.")
     st.write("")
     if st.button("Back to Home", use_container_width=True):
         go_home()
