@@ -508,12 +508,12 @@ elif st.session_state.page == "item_detail":
             st.info("Please CC 1730@rawdalsaleheen.edu.kw when contacting the finder.")
             st.info("To protect the item, submit an ownership claim below. Your answers will be reviewed privately before the item is returned.")
             st.markdown("### Claim This Item")
-            st.caption("Do not enter passwords or other sensitive personal information.")
+            st.caption("Do not repeat details already shown above. Do not enter passwords or sensitive personal information. Answers are reviewed manually, not automatically approved.")
             with st.form(f"claim_form_{item['ID']}"):
                 claimant_email = st.text_input("Your RSS email *", key=f"claim_email_{item['ID']}")
-                claim_color = st.text_input("1. What color is the item? *", key=f"claim_color_{item['ID']}")
-                claim_brand = st.text_input("2. What brand or type is it? *", key=f"claim_brand_{item['ID']}")
-                claim_detail = st.text_area("3. Describe a detail that proves it is yours. *", key=f"claim_detail_{item['ID']}")
+                claim_color = st.text_area("1. Where and approximately when did you last have this item? Give details not shown in the listing. *", key=f"claim_color_{item['ID']}")
+                claim_brand = st.text_area("2. Describe a unique detail NOT visible in the photo or public description. *", key=f"claim_brand_{item['ID']}")
+                claim_detail = st.text_area("3. What other proof can you provide? (For example, an older photo or receipt; describe it here.) *", key=f"claim_detail_{item['ID']}")
                 claim_send = st.form_submit_button("SUBMIT OWNERSHIP CLAIM", use_container_width=True)
             if claim_send:
                 if not valid_rss_email(claimant_email):
@@ -590,7 +590,7 @@ elif st.session_state.page == "claim_admin":
         go_home()
         st.rerun()
     st.markdown("### Ownership Claims — Administrator Only")
-    st.caption("Review answers manually with the finder. Approval does not automatically confirm ownership or send email.")
+    st.caption("Compare answers with the finder and ask for proof before returning the item. Public listing details do not establish ownership. Approval does not automatically send email.")
     reports_by_id = {str(r["ID"]): r for _, r in load_reports().iterrows()}
     claims = review_claims()
     if not claims:
@@ -602,9 +602,9 @@ elif st.session_state.page == "claim_admin":
         with st.expander(f"{name} — {status} — {submitted}"):
             st.write("**Claimant RSS email:**", claimant)
             st.write("**Item:**", name)
-            st.write("**Color:**", color)
-            st.write("**Brand/type:**", brand)
-            st.write("**Private identifying detail:**", detail)
+            st.write("**Where/when last held:**", color)
+            st.write("**Non-public identifying detail:**", brand)
+            st.write("**Additional proof offered:**", detail)
             if report is not None:
                 st.write("**Finder email (administrator only):**", str(report["Email"]))
             st.write("**Review status:**", status)
