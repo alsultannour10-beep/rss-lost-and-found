@@ -446,6 +446,7 @@ elif st.session_state.page == "item_detail":
             st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
         else:
             st.markdown("### Contact the finder")
+            st.info("Please CC 1730@rawdalsaleheen.edu.kw when contacting the finder.")
             st.markdown(f'<div class="contact-box"><strong>Finder email:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
 
     if contact_email:
