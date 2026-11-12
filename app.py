@@ -276,9 +276,10 @@ def save_report(report, uploaded_photo):
 
 def notify_admin_of_report(report):
     """Send a transactional notification using Brevo; never expose the API key."""
-    api_key = st.secrets.get("BREVO_API_KEY", "")
-    sender_email = st.secrets.get("BREVO_SENDER_EMAIL", "")
-    admin_email = st.secrets.get("BREVO_ADMIN_EMAIL", "")
+    # Trim accidental spaces/newlines from Streamlit Secrets values.
+    api_key = str(st.secrets.get("BREVO_API_KEY", "")).strip()
+    sender_email = str(st.secrets.get("BREVO_SENDER_EMAIL", "")).strip()
+    admin_email = str(st.secrets.get("BREVO_ADMIN_EMAIL", "")).strip()
 
     if not all([api_key, sender_email, admin_email]) or api_key == "YOUR_PRIVATE_API_KEY":
         logging.error("Brevo notification not configured in Streamlit Secrets.")
@@ -312,7 +313,23 @@ def notify_admin_of_report(report):
         with urlopen(request, timeout=12) as response:
             return response.status in (200, 201, 202)
     except HTTPError as exc:
-        logging.error("Brevo rejected notification (HTTP %s). Check verified sender and API/IP permissions.", exc.code)
+        # Brevo returns a JSON body with an error code and message. Never log
+        # the API key, HTTP request headers, or any submitted student data.
+        try:
+            error_data = json.loads(exc.read(4096).decode("utf-8", errors="replace"))
+            brevo_code = str(error_data.get("code", "unknown"))[:100]
+            brevo_message = str(error_data.get("message", "No message"))[:300]
+            # Avoid logging unexpected response content containing credentials.
+            for secret in (api_key, sender_email, admin_email):
+                if secret:
+                    brevo_code = brevo_code.replace(secret, "[REDACTED]")
+                    brevo_message = brevo_message.replace(secret, "[REDACTED]")
+            logging.error(
+                "Brevo email rejected: HTTP %s; Brevo code=%s; message=%s",
+                exc.code, brevo_code, brevo_message,
+            )
+        except (ValueError, UnicodeError, OSError, AttributeError):
+            logging.error("Brevo email rejected: HTTP %s; response was not valid JSON", exc.code)
     except (URLError, TimeoutError, OSError) as exc:
         logging.error("Brevo notification connection failed: %s", type(exc).__name__)
     return False
