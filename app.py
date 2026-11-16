@@ -6,8 +6,8 @@ import uuid
 import hashlib
 import hmac
 import time
-import sqlite3
 import html
+from urllib.parse import urlencode, quote
 
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
 
@@ -324,52 +324,6 @@ def resolve_report(report_id):
     return True
 
 
-# Claims are stored separately from public reports. Never render claim answers publicly.
-CLAIMS_DB = BASE_DIR / "rss_private_claims.sqlite3"
-
-
-def claims_connection():
-    connection = sqlite3.connect(str(CLAIMS_DB), timeout=10)
-    connection.execute("""CREATE TABLE IF NOT EXISTS claims (
-        id TEXT PRIMARY KEY, report_id TEXT NOT NULL, claimant_email TEXT NOT NULL,
-        answer_color TEXT NOT NULL, answer_brand TEXT NOT NULL,
-        answer_detail TEXT NOT NULL, submitted_at TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'Pending')""")
-    return connection
-
-
-def submit_claim(report_id, email, color, brand, detail):
-    with claims_connection() as conn:
-        existing = conn.execute(
-            "SELECT COUNT(*) FROM claims WHERE report_id=? AND claimant_email=?",
-            (report_id, email.lower().strip())
-        ).fetchone()[0]
-        if existing >= 2:
-            return False
-        conn.execute(
-            """INSERT INTO claims (id, report_id, claimant_email, answer_color,
-            answer_brand, answer_detail, submitted_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')""",
-            (uuid.uuid4().hex, report_id, email.lower().strip(), color.strip(),
-             brand.strip(), detail.strip(), datetime.now().isoformat(timespec="seconds"))
-        )
-    return True
-
-
-def review_claims():
-    with claims_connection() as conn:
-        return conn.execute("""SELECT id, report_id, claimant_email, answer_color,
-            answer_brand, answer_detail, submitted_at, status FROM claims
-            ORDER BY submitted_at DESC""").fetchall()
-
-
-def set_claim_status(claim_id, status):
-    if status not in ('Approved', 'Rejected'):
-        return
-    with claims_connection() as conn:
-        conn.execute("UPDATE claims SET status=? WHERE id=?", (status, claim_id))
-
-
 def go_home():
     st.session_state.page = "home"
     st.session_state.report_type = None
@@ -409,17 +363,6 @@ if st.session_state.page == "home":
     if st.button("BROWSE MISSING ITEMS", use_container_width=True):
         st.session_state.page = "missing_items"
         st.rerun()
-    with st.expander("Administrator — Review Ownership Claims"):
-        with st.form("claim_admin_login"):
-            admin_password = st.text_input("Administrator password", type="password")
-            admin_open = st.form_submit_button("OPEN CLAIM REVIEWS")
-        if admin_open:
-            if valid_resolve_password(admin_password):
-                st.session_state.claim_admin_until = time.time() + 900
-                st.session_state.page = "claim_admin"
-                st.rerun()
-            else:
-                st.error("Incorrect administrator password.")
 
 elif st.session_state.page == "found_items":
     st.markdown('<div class="choice-title">Found Items</div>', unsafe_allow_html=True)
@@ -488,7 +431,7 @@ elif st.session_state.page == "item_detail":
     if contact_email:
         st.markdown(f'<div class="choice-title">{item["ItemName"]}</div>', unsafe_allow_html=True)
         photo_path = item.get("Photo", "")
-        if photo_path and Path(photo_path).exists():
+        if is_lost_item and photo_path and Path(photo_path).exists():
             st.image(photo_path, use_container_width=True)
         st.write(f'**Building:** {item["Building"]}')
         if item.get("GradeLevel"):
@@ -505,25 +448,9 @@ elif st.session_state.page == "item_detail":
             st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
         else:
             st.markdown("### Contact the finder")
-            st.info("Please CC 1730@rawdalsaleheen.edu.kw when contacting the finder.")
-            st.info("To protect the item, submit an ownership claim below. Your answers will be reviewed privately before the item is returned.")
-            st.markdown("### Claim This Item")
-            st.caption("Do not repeat details already shown above. Do not enter passwords or sensitive personal information. Answers are reviewed manually, not automatically approved.")
-            with st.form(f"claim_form_{item['ID']}"):
-                claimant_email = st.text_input("Your RSS email *", key=f"claim_email_{item['ID']}")
-                claim_color = st.text_area("1. Where and approximately when did you last have this item? Give details not shown in the listing. *", key=f"claim_color_{item['ID']}")
-                claim_brand = st.text_area("2. Describe a unique detail NOT visible in the photo or public description. *", key=f"claim_brand_{item['ID']}")
-                claim_detail = st.text_area("3. What other proof can you provide? (For example, an older photo or receipt; describe it here.) *", key=f"claim_detail_{item['ID']}")
-                claim_send = st.form_submit_button("SUBMIT OWNERSHIP CLAIM", use_container_width=True)
-            if claim_send:
-                if not valid_rss_email(claimant_email):
-                    st.error("Enter a valid RSS school email.")
-                elif not all(v.strip() for v in (claim_color, claim_brand, claim_detail)):
-                    st.error("Please answer all three questions.")
-                elif submit_claim(str(item['ID']), claimant_email, claim_color, claim_brand, claim_detail):
-                    st.success("Claim submitted for private administrator review. Submission does not confirm ownership.")
-                else:
-                    st.warning("This email has already submitted the maximum of two claims for this item. Please contact the school administrator.")
+            st.info("Please mention the color of your item when contacting the finder to confirm ownership. Remember to CC 1730@rawdalsaleheen.edu.kw.")
+            mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode({"cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
+            st.markdown(f'<div class="contact-box"><strong>Contact the finder:</strong><br><a href="{html.escape(mail_href, quote=True)}">{html.escape(contact_email)}</a><br><span>Click the email address to contact the finder through Outlook or your email app.</span></div>', unsafe_allow_html=True)
 
     if contact_email:
         st.markdown("### Item returned?")
@@ -582,45 +509,6 @@ elif st.session_state.page == "item_detail":
     back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
     if st.button(back_label, use_container_width=True):
         st.session_state.page = "missing_items" if is_lost_item else "found_items"
-        st.rerun()
-
-elif st.session_state.page == "claim_admin":
-    if time.time() >= st.session_state.get("claim_admin_until", 0):
-        st.warning("Administrator access expired. Please sign in again.")
-        go_home()
-        st.rerun()
-    st.markdown("### Ownership Claims — Administrator Only")
-    st.caption("Compare answers with the finder and ask for proof before returning the item. Public listing details do not establish ownership. Approval does not automatically send email.")
-    reports_by_id = {str(r["ID"]): r for _, r in load_reports().iterrows()}
-    claims = review_claims()
-    if not claims:
-        st.info("No ownership claims submitted yet.")
-    for claim in claims:
-        claim_id, report_id, claimant, color, brand, detail, submitted, status = claim
-        report = reports_by_id.get(report_id)
-        name = str(report["ItemName"]) if report is not None else "Report no longer available"
-        with st.expander(f"{name} — {status} — {submitted}"):
-            st.write("**Claimant RSS email:**", claimant)
-            st.write("**Item:**", name)
-            st.write("**Where/when last held:**", color)
-            st.write("**Non-public identifying detail:**", brand)
-            st.write("**Additional proof offered:**", detail)
-            if report is not None:
-                st.write("**Finder email (administrator only):**", str(report["Email"]))
-            st.write("**Review status:**", status)
-            if status == "Pending":
-                approve_col, reject_col = st.columns(2)
-                with approve_col:
-                    if st.button("APPROVE FOR FOLLOW-UP", key=f"approve_{claim_id}", use_container_width=True):
-                        set_claim_status(claim_id, "Approved")
-                        st.rerun()
-                with reject_col:
-                    if st.button("REJECT CLAIM", key=f"reject_{claim_id}", use_container_width=True):
-                        set_claim_status(claim_id, "Rejected")
-                        st.rerun()
-    if st.button("LOCK AND RETURN HOME", use_container_width=True):
-        st.session_state.pop("claim_admin_until", None)
-        go_home()
         st.rerun()
 
 elif st.session_state.page == "resolved":
@@ -712,11 +600,13 @@ elif st.session_state.page == "form":
             location = location_choice or ""
 
     with st.form("rss_report_form", clear_on_submit=False):
+        if report_type == "Found":
+            st.info("Please do not mention the item's color in its name or description. Keep it private to help verify ownership.")
         item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
-        description = st.text_area("Description *", placeholder="Describe the item: color, brand, size, or any detail that can help identify it.", height=100)
+        description = st.text_area("Description *", placeholder="Describe the brand, size, or other details, without mentioning the color." if report_type == "Found" else "Describe the item: color, brand, size, or any detail that can help identify it.", height=100)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
-        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.")
+        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.") if report_type == "Lost" else None
         submitted = st.form_submit_button("Submit Report", use_container_width=True)
 
         if submitted:
