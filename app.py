@@ -448,9 +448,8 @@ elif st.session_state.page == "item_detail":
             st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
         else:
             st.markdown("### Contact the finder")
-            st.info("Please email the finder and mention the color of your item. If the color is correct, the finder can arrange to return it to you. Please CC 1730@rawdalsaleheen.edu.kw.")
             mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode({"cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
-            st.markdown(f'<div class="contact-box"><strong>Contact the finder:</strong><br><a href="{html.escape(mail_href, quote=True)}">{html.escape(contact_email)}</a><br><span>Click the email address to open your email app. The CC address and a message asking for your item color are already filled in.</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="contact-box">Email <a href="{html.escape(mail_href, quote=True)}">{html.escape(contact_email)}</a> and mention your item&#39;s color to confirm ownership and arrange its return. The CC address (1730@rawdalsaleheen.edu.kw) and email message are automatically filled in when you click the email address.</div>', unsafe_allow_html=True)
 
     if contact_email:
         st.markdown("### Item returned?")
