@@ -82,6 +82,22 @@ textarea,
 .contact-box a { color:#102a52 !important; font-weight:700; text-decoration:underline; }
 .choice-title { text-align:center; color:var(--navy); font-size:1.55rem; font-weight:700; margin:30px 0 15px; }
 .helper { text-align:center; color:#667085; margin:-6px auto 20px; max-width:620px; }
+
+/* Home page: quiet secondary browsing shortcuts; primary action buttons stay navy. */
+.home-browse-label { text-align:center; color:#747987; font-size:.85rem; letter-spacing:.06em; margin:26px 0 12px; }
+.st-key-home_browse_shortcuts div.stButton > button {
+    background:#EEF2F6 !important; color:#102A52 !important;
+    border:1px solid #D8DEE7 !important; min-height:52px;
+    font-size:.95rem; border-radius:12px;
+}
+.st-key-home_browse_shortcuts div.stButton > button p,
+.st-key-home_browse_shortcuts div.stButton > button span {
+    color:#102A52 !important; -webkit-text-fill-color:#102A52 !important;
+}
+.st-key-home_browse_shortcuts div.stButton > button:hover {
+    background:#E1EAF5 !important; border-color:#A8B9CD !important;
+}
+
 .success-box { padding:28px; border:1px solid #d8e7dd; border-radius:18px; text-align:center; background:#fbfefc; }
 .item-card { border:1px solid var(--line); border-radius:16px; padding:18px; margin:12px 0; background:#fff; }
 .item-name { color:var(--navy); font-size:1.3rem; font-weight:700; margin-bottom:4px; }
@@ -357,12 +373,17 @@ if st.session_state.page == "home":
         st.session_state.report_type = "Found"
         st.session_state.page = "missing_items"
         st.rerun()
-    if st.button("BROWSE FOUND ITEMS", use_container_width=True):
-        st.session_state.page = "found_items"
-        st.rerun()
-    if st.button("BROWSE MISSING ITEMS", use_container_width=True):
-        st.session_state.page = "missing_items"
-        st.rerun()
+    st.markdown('<div class="home-browse-label">OR BROWSE REPORTS DIRECTLY</div>', unsafe_allow_html=True)
+    with st.container(key="home_browse_shortcuts"):
+        found_column, missing_column = st.columns(2, gap="small")
+        with found_column:
+            if st.button("Browse Found Items", use_container_width=True):
+                st.session_state.page = "found_items"
+                st.rerun()
+        with missing_column:
+            if st.button("Browse Missing Items", use_container_width=True):
+                st.session_state.page = "missing_items"
+                st.rerun()
 
 elif st.session_state.page == "found_items":
     st.markdown('<div class="choice-title">Found Items</div>', unsafe_allow_html=True)
