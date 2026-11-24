@@ -285,11 +285,18 @@ li[role="option"][aria-selected="true"] {
 .detail-email-button:hover { background:#183B6B; color:#FFFFFF !important; }
 .detail-note { color:#667085; font-size:.83rem; margin:3px 0 18px; }
 
-/* Consistent, understated symbols on the item details page. */
-.detail-info-line { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid #E7ECF2; }
-.detail-info-line:last-child { border-bottom:0; }
-.detail-info-icon { flex:0 0 21px; width:21px; height:21px; margin-top:4px; color:#102A52; }
-.detail-info-content { min-width:0; flex:1; }
+/* Item information: compact, clearly grouped fields with a quiet hierarchy. */
+.detail-info-card {
+    background:#F7F9FC; border:1px solid #E3E8EF; border-radius:13px;
+    padding:17px 20px; margin:9px 0 20px;
+}
+.detail-info-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:16px; row-gap:14px; }
+.detail-info-field { min-width:0; }
+.detail-info-field-wide { grid-column:1 / -1; border-top:1px solid #E3E8EF; padding-top:13px; }
+.detail-info-label { color:#6B7585; font-size:.82rem; font-weight:400; margin-bottom:5px; }
+.detail-info-value { color:#102A52; font-size:1.02rem; font-weight:600; line-height:1.45; overflow-wrap:anywhere; white-space:pre-wrap; }
+.detail-info-secondary { color:#59677A; font-size:.90rem; margin-top:3px; overflow-wrap:anywhere; }
+@media (max-width:560px) { .detail-info-grid { grid-template-columns:1fr; row-gap:13px; } .detail-info-field-wide { grid-column:1; } }
 .detail-email-button { display:flex; justify-content:center; align-items:center; gap:9px; }
 .detail-email-button svg { width:19px; height:19px; flex-shrink:0; }
 /* Limit quiet navigation styling to item detail; do not change other buttons. */
@@ -529,39 +536,40 @@ elif st.session_state.page == "item_detail":
 
     place_label = "Last seen at" if is_lost_item else "Found at"
     date_label = "Date lost" if is_lost_item else "Date found"
-    detail_fields = [
-        ("Building", item.get("Building", "")),
-        ("Grade Level", item.get("GradeLevel", "")),
-        ("Class", item.get("Class", "")),
-        (place_label, item.get("Location", "")),
-        (date_label, item.get("EventDate", "")),
-        ("Description", item.get("Description", "")),
-    ]
-    # Inline vector symbols (no extra libraries, images, or emoji fonts required).
-    detail_icon_paths = {
-        "location": '<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
-        "calendar": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
-        "description": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
-        "mail": '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m3 6 9 7 9-7"/>',
-    }
+    building = str(item.get("Building", "")).strip()
+    location = str(item.get("Location", "")).strip()
+    grade_level = str(item.get("GradeLevel", "")).strip()
+    school_class = str(item.get("Class", "")).strip()
+    date_found = str(item.get("EventDate", "")).strip()
+    description = str(item.get("Description", "")).strip()
 
-    def detail_icon(kind):
-        return ('<svg class="detail-info-icon" xmlns="http://www.w3.org/2000/svg" '
-                'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+    # Display related information together; escape all report text before embedding in HTML.
+    def safe_detail(value):
+        return html.escape(value) if value and value.lower() != "nan" else "—"
+
+    def field(label, value, extra_class="", secondary=""):
+        secondary_html = ('<div class="detail-info-secondary">' + safe_detail(secondary) + '</div>') if secondary else ""
+        return ('<div class="detail-info-field ' + extra_class + '">'
+                '<div class="detail-info-label">' + html.escape(label) + '</div>'
+                '<div class="detail-info-value">' + safe_detail(value) + '</div>'
+                + secondary_html + '</div>')
+
+    class_details = " · ".join(x for x in (grade_level, school_class) if x and x.lower() != "nan")
+    detail_card = (
+        '<div class="detail-info-card"><div class="detail-info-grid">'
+        + field("Building", building)
+        + field(place_label, location, secondary=class_details)
+        + field(date_label, date_found)
+        + field("Description", description, "detail-info-field-wide")
+        + '</div></div>'
+    )
+    st.markdown(detail_card, unsafe_allow_html=True)
+
+    mail_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+                'fill="none" stroke="currentColor" stroke-width="1.8" '
                 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-                + detail_icon_paths[kind] + '</svg>')
-
-    with st.container(border=True):
-        for label, value in detail_fields:
-            if value is not None and str(value).strip() and str(value).lower() != "nan":
-                icon_kind = ("calendar" if label in ("Date lost", "Date found") else
-                             "description" if label == "Description" else "location")
-                st.markdown(
-                    '<div class="detail-info-line">' + detail_icon(icon_kind) +
-                    '<div class="detail-info-content"><div class="detail-label">' + html.escape(label) +
-                    '</div><div class="detail-value">' + html.escape(str(value)) + '</div></div></div>',
-                    unsafe_allow_html=True,
-                )
+                '<rect x="2" y="4" width="20" height="16" rx="2"/>'
+                '<path d="m3 6 9 7 9-7"/></svg>')
 
     if contact_email:
         st.markdown("### I Found This Item" if is_lost_item else "### Contact the Finder")
@@ -571,14 +579,14 @@ elif st.session_state.page == "item_detail":
         else:
             st.markdown('<p class="detail-intro">Think this is yours? Email the finder and mention your item&#39;s color to help confirm ownership.</p>', unsafe_allow_html=True)
             mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode({"cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
-        st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">' + detail_icon('mail') + 'Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
+        st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
         if is_lost_item:
             st.markdown('<p class="detail-note">Opens your email app with the student&#39;s email address.</p>', unsafe_allow_html=True)
         else:
             st.markdown('<p class="detail-note">Opens your email app with the message and CC address automatically filled in.</p>', unsafe_allow_html=True)
 
     if contact_email:
-        with st.expander("🔒 Administrator Only — Item Returned?", expanded=False):
+        with st.expander("Administrator · Item Returned?", expanded=False):
             st.markdown('<div class="detail-intro">Item returned? Enter the administrator password to mark it as resolved.</div>', unsafe_allow_html=True)
             item_id = str(item.get("ID", ""))
             confirm_key = f"confirm_resolve_{item_id}"
