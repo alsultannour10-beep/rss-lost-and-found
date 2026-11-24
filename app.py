@@ -271,6 +271,28 @@ li[role="option"][aria-selected="true"] {
 .st-key-found_back_home div.stButton > button:hover,
 .st-key-missing_back_home div.stButton > button:hover { background:#F3F6FA !important; border:0 !important; }
 
+
+/* Item detail: calm, readable information and clear contact action. */
+.detail-heading { font-size:1.55rem; color:#102A52; font-weight:700; margin:18px 0 4px; overflow-wrap:anywhere; }
+.detail-subheading { color:#667085; font-size:.88rem; margin-bottom:14px; }
+.detail-row { padding:10px 0; border-bottom:1px solid #E7ECF2; }
+.detail-row:last-child { border-bottom:0; }
+.detail-label { font-size:.83rem; color:#667085; margin-bottom:4px; }
+.detail-value { color:#102A52; font-size:1rem; overflow-wrap:anywhere; white-space:pre-wrap; }
+.detail-intro { color:#51657B; font-size:.95rem; margin:4px 0 12px; }
+.detail-email-button { display:block; text-align:center; background:#102A52; color:#FFFFFF !important;
+    text-decoration:none !important; font-weight:700; border-radius:10px; padding:14px 18px; margin:10px 0; }
+.detail-email-button:hover { background:#183B6B; color:#FFFFFF !important; }
+.detail-note { color:#667085; font-size:.83rem; margin:3px 0 18px; }
+/* Limit quiet navigation styling to item detail; do not change other buttons. */
+.st-key-detail_back div.stButton > button {
+    background:transparent !important; border:0 !important; box-shadow:none !important;
+    color:#667085 !important; min-height:35px; font-size:.92rem;
+}
+.st-key-detail_back div.stButton > button p,
+.st-key-detail_back div.stButton > button span { color:#667085 !important; -webkit-text-fill-color:#667085 !important; }
+.st-key-detail_back div.stButton > button:hover { background:#F3F6FA !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -491,85 +513,100 @@ elif st.session_state.page == "item_detail":
         st.rerun()
     contact_email = str(item.get("Email", "")).strip()
     is_lost_item = str(item.get("Type", "")).strip().lower() == "lost"
+    st.markdown(f'<div class="detail-heading">{html.escape(str(item.get("ItemName", "Item")))}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="detail-subheading">{"Missing item details" if is_lost_item else "Found item details"}</div>', unsafe_allow_html=True)
+    photo_path = item.get("Photo", "")
+    if is_lost_item and photo_path and Path(photo_path).exists():
+        st.image(photo_path, use_container_width=True)
+
+    place_label = "Last seen at" if is_lost_item else "Found at"
+    date_label = "Date lost" if is_lost_item else "Date found"
+    detail_fields = [
+        ("Building", item.get("Building", "")),
+        ("Grade Level", item.get("GradeLevel", "")),
+        ("Class", item.get("Class", "")),
+        (place_label, item.get("Location", "")),
+        (date_label, item.get("EventDate", "")),
+        ("Description", item.get("Description", "")),
+    ]
+    with st.container(border=True):
+        for label, value in detail_fields:
+            if value is not None and str(value).strip() and str(value).lower() != "nan":
+                st.markdown(
+                    '<div class="detail-row"><div class="detail-label">' + html.escape(label) +
+                    '</div><div class="detail-value">' + html.escape(str(value)) + '</div></div>',
+                    unsafe_allow_html=True,
+                )
+
     if contact_email:
-        st.markdown(f'<div class="choice-title">{item["ItemName"]}</div>', unsafe_allow_html=True)
-        photo_path = item.get("Photo", "")
-        if is_lost_item and photo_path and Path(photo_path).exists():
-            st.image(photo_path, use_container_width=True)
-        st.write(f'**Building:** {item["Building"]}')
-        if item.get("GradeLevel"):
-            st.write(f'**Grade Level:** {item["GradeLevel"]}')
-        if item.get("Class"):
-            st.write(f'**Class:** {item["Class"]}')
-        place_label = "Last seen at" if is_lost_item else "Found at"
-        date_label = "Date lost" if is_lost_item else "Date found"
-        st.write(f'**{place_label}:** {item["Location"]}')
-        st.write(f'**{date_label}:** {item["EventDate"]}')
-        st.write(f'**Description:** {item["Description"]}')
+        st.markdown("### I Found This Item" if is_lost_item else "### Contact the Finder")
         if is_lost_item:
-            st.markdown("### I Found This Item")
-            st.markdown(f'<div class="contact-box"><strong>Contact the student:</strong><br><a href="mailto:{contact_email}">{contact_email}</a><br><span>Click the email address to contact the student through Outlook or your email app.</span></div>', unsafe_allow_html=True)
+            st.markdown('<p class="detail-intro">Found this item? Contact the student using your RSS school email.</p>', unsafe_allow_html=True)
+            mail_href = "mailto:" + quote(contact_email, safe="@")
         else:
-            st.markdown("### Contact the finder")
+            st.markdown('<p class="detail-intro">Think this is yours? Email the finder and mention your item&#39;s color to help confirm ownership.</p>', unsafe_allow_html=True)
             mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode({"cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
-            st.markdown(f'<div class="contact-box">Email <a href="{html.escape(mail_href, quote=True)}">{html.escape(contact_email)}</a> and mention your item&#39;s color to confirm ownership and arrange its return. The CC address (1730@rawdalsaleheen.edu.kw) and email message are automatically filled in when you click the email address.</div>', unsafe_allow_html=True)
+        st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
+        if is_lost_item:
+            st.markdown('<p class="detail-note">Opens your email app with the student&#39;s email address.</p>', unsafe_allow_html=True)
+        else:
+            st.markdown('<p class="detail-note">Opens your email app with the message and CC address automatically filled in.</p>', unsafe_allow_html=True)
 
     if contact_email:
-        st.markdown("### Item returned?")
-        item_id = str(item.get("ID", ""))
-        confirm_key = f"confirm_resolve_{item_id}"
-        verified_key = f"verified_resolve_{item_id}"
-        attempts_key = f"resolve_attempts_{item_id}"
-        lock_key = f"resolve_locked_until_{item_id}"
+        with st.expander("Administrator Only — Item Returned?", expanded=False):
+            st.markdown('<div class="detail-intro">Item returned? Enter the administrator password to mark it as resolved.</div>', unsafe_allow_html=True)
+            item_id = str(item.get("ID", ""))
+            confirm_key = f"confirm_resolve_{item_id}"
+            verified_key = f"verified_resolve_{item_id}"
+            attempts_key = f"resolve_attempts_{item_id}"
+            lock_key = f"resolve_locked_until_{item_id}"
 
-        st.markdown('<div class="helper">If this item has been returned to its owner, mark the report as resolved to remove it from the active listings.</div>', unsafe_allow_html=True)
-
-        if not st.session_state.get(verified_key, False):
-            with st.form(f"resolve_password_form_{item_id}"):
-                resolve_password = st.text_input("Administrator password", type="password", key=f"resolve_password_{item_id}")
-                unlock = st.form_submit_button("UNLOCK MARK AS RESOLVED", use_container_width=True)
-            if unlock:
-                if time.time() < st.session_state.get(lock_key, 0):
-                    st.error("Too many attempts. Please wait 5 minutes before trying again.")
-                elif valid_resolve_password(resolve_password):
-                    st.session_state[verified_key] = True
-                    st.session_state[attempts_key] = 0
-                    st.rerun()
-                else:
-                    attempts = st.session_state.get(attempts_key, 0) + 1
-                    st.session_state[attempts_key] = attempts
-                    if attempts >= 5:
-                        st.session_state[lock_key] = time.time() + 300
-                        st.session_state[attempts_key] = 0
+            if not st.session_state.get(verified_key, False):
+                with st.form(f"resolve_password_form_{item_id}"):
+                    resolve_password = st.text_input("Administrator password", type="password", key=f"resolve_password_{item_id}")
+                    unlock = st.form_submit_button("UNLOCK MARK AS RESOLVED", use_container_width=True)
+                if unlock:
+                    if time.time() < st.session_state.get(lock_key, 0):
                         st.error("Too many attempts. Please wait 5 minutes before trying again.")
-                    else:
-                        st.error("Incorrect administrator password.")
-        elif not st.session_state.get(confirm_key, False):
-            if st.button("MARK AS RESOLVED", use_container_width=True, key=f"resolve_start_{item_id}"):
-                st.session_state[confirm_key] = True
-                st.rerun()
-        else:
-            st.markdown('<div style="background:#D1D5DB; color:#FFFFFF; padding:0.85rem 1rem; border-radius:8px; font-weight:700; margin:0.5rem 0 1rem 0;">Are you sure this item has been returned to its owner?</div>', unsafe_allow_html=True)
-            confirm_col, cancel_col = st.columns(2)
-            with confirm_col:
-                if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
-                    # Verify the per-item unlock state before allowing deletion.
-                    if st.session_state.get(verified_key, False) and resolve_report(item_id):
-                        st.session_state.pop(confirm_key, None)
-                        st.session_state.pop(verified_key, None)
-                        st.session_state.selected_item = None
-                        st.session_state.page = "resolved"
+                    elif valid_resolve_password(resolve_password):
+                        st.session_state[verified_key] = True
+                        st.session_state[attempts_key] = 0
                         st.rerun()
                     else:
-                        st.error("This report could not be removed. Please try again.")
-            with cancel_col:
-                if st.button("CANCEL", use_container_width=True, key=f"resolve_cancel_{item_id}"):
-                    st.session_state.pop(confirm_key, None)
-                    st.session_state.pop(verified_key, None)
+                        attempts = st.session_state.get(attempts_key, 0) + 1
+                        st.session_state[attempts_key] = attempts
+                        if attempts >= 5:
+                            st.session_state[lock_key] = time.time() + 300
+                            st.session_state[attempts_key] = 0
+                            st.error("Too many attempts. Please wait 5 minutes before trying again.")
+                        else:
+                            st.error("Incorrect administrator password.")
+            elif not st.session_state.get(confirm_key, False):
+                if st.button("MARK AS RESOLVED", use_container_width=True, key=f"resolve_start_{item_id}"):
+                    st.session_state[confirm_key] = True
                     st.rerun()
+            else:
+                st.markdown('<div style="background:#D1D5DB; color:#FFFFFF; padding:0.85rem 1rem; border-radius:8px; font-weight:700; margin:0.5rem 0 1rem 0;">Are you sure this item has been returned to its owner?</div>', unsafe_allow_html=True)
+                confirm_col, cancel_col = st.columns(2)
+                with confirm_col:
+                    if st.button("YES, MARK AS RESOLVED", use_container_width=True, key=f"resolve_yes_{item_id}"):
+                        # Verify the per-item unlock state before allowing deletion.
+                        if st.session_state.get(verified_key, False) and resolve_report(item_id):
+                            st.session_state.pop(confirm_key, None)
+                            st.session_state.pop(verified_key, None)
+                            st.session_state.selected_item = None
+                            st.session_state.page = "resolved"
+                            st.rerun()
+                        else:
+                            st.error("This report could not be removed. Please try again.")
+                with cancel_col:
+                    if st.button("CANCEL", use_container_width=True, key=f"resolve_cancel_{item_id}"):
+                        st.session_state.pop(confirm_key, None)
+                        st.session_state.pop(verified_key, None)
+                        st.rerun()
 
     back_label = "Back to Missing Items" if is_lost_item else "Back to Found Items"
-    if st.button(back_label, use_container_width=True):
+    if st.button("← " + back_label, use_container_width=True, key="detail_back"):
         st.session_state.page = "missing_items" if is_lost_item else "found_items"
         st.rerun()
 
