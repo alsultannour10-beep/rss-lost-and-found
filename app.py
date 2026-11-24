@@ -377,11 +377,11 @@ if st.session_state.page == "home":
     with st.container(key="home_browse_shortcuts"):
         found_column, missing_column = st.columns(2, gap="small")
         with found_column:
-            if st.button("Browse Found Items", use_container_width=True):
+            if st.button("Found Items", use_container_width=True):
                 st.session_state.page = "found_items"
                 st.rerun()
         with missing_column:
-            if st.button("Browse Missing Items", use_container_width=True):
+            if st.button("Missing Items", use_container_width=True):
                 st.session_state.page = "missing_items"
                 st.rerun()
 
