@@ -240,6 +240,37 @@ li[role="option"][aria-selected="true"] {
     -webkit-text-fill-color:#102A52 !important;
 }
 
+
+/* FOUND + MISSING listings: one compact, unified card per item. */
+.listing-name { color:#102A52; font-weight:700; font-size:1.23rem; margin-bottom:4px; }
+.listing-meta { color:#667085; font-size:.90rem; margin-bottom:7px; }
+.listing-description { color:#263449; font-size:1rem; margin-bottom:4px; white-space:pre-wrap; overflow-wrap:anywhere; }
+[class*="st-key-listing_found_"] [data-testid="stVerticalBlockBorderWrapper"],
+[class*="st-key-listing_missing_"] [data-testid="stVerticalBlockBorderWrapper"] { border-color:#E3E8EF; border-radius:14px; }
+[class*="st-key-listing_found_"] div.stButton > button,
+[class*="st-key-listing_missing_"] div.stButton > button { min-height:42px; border-radius:9px; font-size:.93rem; }
+/* Separate pale-blue panel for the alternative reporting action. */
+.st-key-found_report_cta, .st-key-missing_report_cta {
+    background:#EAF1F8; border:1px solid #DCE6F1; border-radius:14px;
+    padding:18px; margin-top:22px; margin-bottom:12px;
+}
+.report-cta-title { text-align:center; font-weight:700; color:#102A52; font-size:1.12rem; margin-bottom:5px; }
+.report-cta-desc { text-align:center; color:#51657B; font-size:.94rem; margin-bottom:12px; }
+.st-key-found_report_cta div.stButton > button,
+.st-key-missing_report_cta div.stButton > button { min-height:46px; border-radius:9px; font-size:1rem; }
+/* Back button is intentionally quiet instead of another large navy action. */
+.st-key-found_back_home div.stButton > button,
+.st-key-missing_back_home div.stButton > button {
+    background:transparent !important; border:0 !important; box-shadow:none !important;
+    min-height:35px; font-size:.92rem; color:#667085 !important;
+}
+.st-key-found_back_home div.stButton > button p,
+.st-key-missing_back_home div.stButton > button p,
+.st-key-found_back_home div.stButton > button span,
+.st-key-missing_back_home div.stButton > button span { color:#667085 !important; -webkit-text-fill-color:#667085 !important; }
+.st-key-found_back_home div.stButton > button:hover,
+.st-key-missing_back_home div.stButton > button:hover { background:#F3F6FA !important; border:0 !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -387,58 +418,69 @@ if st.session_state.page == "home":
 
 elif st.session_state.page == "found_items":
     st.markdown('<div class="choice-title">Found Items</div>', unsafe_allow_html=True)
-    st.markdown('<div class="helper">Look through items that have already been found before submitting a lost-item report.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="helper">Check if someone has already found your item.</div>', unsafe_allow_html=True)
     reports = load_reports()
     found = reports[reports["Type"].str.lower() == "found"].copy() if not reports.empty else reports
-    search = st.text_input("Search found items")
+    search = st.text_input("Search found items", placeholder="Search for an item...")
     if search and not found.empty:
-        mask = (found["ItemName"] + " " + found["Description"] + " " + found["Location"]).str.contains(search, case=False, na=False)
+        mask = (found["ItemName"] + " " + found["Description"] + " " + found["Location"]).str.contains(search, case=False, na=False, regex=False)
         found = found[mask]
     if found.empty:
         st.info("No found items match your search yet.")
     else:
         found = found.sort_values("SubmittedAt", ascending=False)
         for _, row in found.iterrows():
-            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
-            if st.button("View Item / Contact Finder", key=f'view_{row["ID"]}', use_container_width=True):
-                st.session_state.selected_item = row.to_dict()
-                st.session_state.page = "item_detail"
-                st.rerun()
-    st.write("")
-    if st.button("I DID NOT FIND MY ITEM - REPORT IT", use_container_width=True):
-        st.session_state.report_type = "Lost"
-        st.session_state.page = "form"
-        st.rerun()
-    if st.button("Back to Home", use_container_width=True):
+            with st.container(border=True, key=f'listing_found_{row["ID"]}'):
+                safe_name = html.escape(str(row["ItemName"]))
+                safe_building = html.escape(str(row["Building"]))
+                safe_location = html.escape(str(row["Location"]))
+                safe_description = html.escape(str(row["Description"]))
+                st.markdown(f'<div class="listing-name">{safe_name}</div><div class="listing-meta">{safe_building} · {safe_location}</div><div class="listing-description">{safe_description}</div>', unsafe_allow_html=True)
+                if st.button("View Details & Contact Finder", key=f'view_{row["ID"]}', use_container_width=True):
+                    st.session_state.selected_item = row.to_dict()
+                    st.session_state.page = "item_detail"
+                    st.rerun()
+    with st.container(key="found_report_cta"):
+        st.markdown('<div class="report-cta-title">Cannot find your item?</div><div class="report-cta-desc">Submit a missing-item report to help others find it.</div>', unsafe_allow_html=True)
+        if st.button("Report Missing Item", use_container_width=True):
+            st.session_state.report_type = "Lost"
+            st.session_state.page = "form"
+            st.rerun()
+    if st.button("← Back to Home", key="found_back_home", use_container_width=True):
         go_home()
         st.rerun()
 
 elif st.session_state.page == "missing_items":
     st.markdown('<div class="choice-title">Missing Items</div>', unsafe_allow_html=True)
-    st.markdown('<div class="helper">These are items students have reported missing. If you recognize or found one, open the report to contact the student.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="helper">Browse missing items and contact their owners if you found one.</div>', unsafe_allow_html=True)
     reports = load_reports()
     missing = reports[reports["Type"].str.lower() == "lost"].copy() if not reports.empty else reports
-    search = st.text_input("Search missing items")
+    search = st.text_input("Search missing items", placeholder="Search for an item...")
     if search and not missing.empty:
-        mask = (missing["ItemName"] + " " + missing["Description"] + " " + missing["Location"]).str.contains(search, case=False, na=False)
+        mask = (missing["ItemName"] + " " + missing["Description"] + " " + missing["Location"]).str.contains(search, case=False, na=False, regex=False)
         missing = missing[mask]
     if missing.empty:
         st.info("No missing items match your search yet.")
     else:
         missing = missing.sort_values("SubmittedAt", ascending=False)
         for _, row in missing.iterrows():
-            st.markdown(f'<div class="item-card"><div class="item-name">{row["ItemName"]}</div><div class="item-meta">{row["Building"]} | {row["Location"]}</div><div>{row["Description"]}</div></div>', unsafe_allow_html=True)
-            if st.button("View Missing Item / I Found This", key=f'missing_{row["ID"]}', use_container_width=True):
-                st.session_state.selected_item = row.to_dict()
-                st.session_state.page = "item_detail"
-                st.rerun()
-    st.write("")
-    if st.session_state.report_type == "Found":
-        if st.button("I DID NOT FIND A MATCH - REPORT FOUND ITEM", use_container_width=True):
+            with st.container(border=True, key=f'listing_missing_{row["ID"]}'):
+                safe_name = html.escape(str(row["ItemName"]))
+                safe_building = html.escape(str(row["Building"]))
+                safe_location = html.escape(str(row["Location"]))
+                safe_description = html.escape(str(row["Description"]))
+                st.markdown(f'<div class="listing-name">{safe_name}</div><div class="listing-meta">{safe_building} · {safe_location}</div><div class="listing-description">{safe_description}</div>', unsafe_allow_html=True)
+                if st.button("View Details / I Found This", key=f'missing_{row["ID"]}', use_container_width=True):
+                    st.session_state.selected_item = row.to_dict()
+                    st.session_state.page = "item_detail"
+                    st.rerun()
+    with st.container(key="missing_report_cta"):
+        st.markdown('<div class="report-cta-title">Found something not listed?</div><div class="report-cta-desc">Report the item so its owner can find it.</div>', unsafe_allow_html=True)
+        if st.button("Report Found Item", use_container_width=True):
             st.session_state.report_type = "Found"
             st.session_state.page = "form"
             st.rerun()
-    if st.button("Back to Home", use_container_width=True, key="missing_back_home"):
+    if st.button("← Back to Home", key="missing_back_home", use_container_width=True):
         go_home()
         st.rerun()
 
