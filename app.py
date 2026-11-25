@@ -7,6 +7,10 @@ import hashlib
 import hmac
 import time
 import html
+import base64
+import json
+import urllib.request
+import urllib.error
 from urllib.parse import urlencode, quote
 
 st.set_page_config(page_title="RSS Lost & Found", layout="centered")
@@ -408,6 +412,86 @@ def resolve_report(report_id):
     return True
 
 
+# Microsoft Graph can create a real Outlook draft with CC. A standard Outlook
+# deeplink cannot reliably set CC. The Graph option requires school-approved
+# Microsoft Entra app registration (see OUTLOOK_SETUP.md).
+def outlook_graph_config():
+    try:
+        config = st.secrets.get("outlook_graph", {})
+        required = ("tenant_id", "client_id", "client_secret", "redirect_uri")
+        return config if all(config.get(key) for key in required) else None
+    except (FileNotFoundError, KeyError):
+        return None
+
+
+def outlook_graph_post(url, data, headers=None):
+    payload = json.dumps(data).encode("utf-8") if isinstance(data, dict) else urlencode(data).encode("utf-8")
+    req = urllib.request.Request(url, data=payload, headers=headers or {}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=18) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError("Microsoft 365 rejected the request (HTTP " + str(exc.code) + "): " + details[:350]) from exc
+
+
+def outlook_signed_state(message, config):
+    payload = dict(message, issued=int(time.time()))
+    encoded = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
+    signature = hmac.new(config["client_secret"].encode(), encoded.encode(), hashlib.sha256).hexdigest()
+    return encoded + "." + signature
+
+
+def outlook_auth_url(message, config):
+    state = outlook_signed_state(message, config)
+    params = {
+        "client_id": config["client_id"], "response_type": "code",
+        "redirect_uri": config["redirect_uri"], "response_mode": "query",
+        "scope": "openid profile User.Read Mail.ReadWrite",
+        "state": state, "prompt": "select_account",
+    }
+    return "https://login.microsoftonline.com/" + quote(config["tenant_id"], safe="") + "/oauth2/v2.0/authorize?" + urlencode(params)
+
+
+def outlook_finish_auth(config):
+    code = st.query_params.get("code")
+    state = st.query_params.get("state")
+    if not code or not state:
+        return
+    try:
+        encoded, signature = state.rsplit(".", 1)
+        expected = hmac.new(config["client_secret"].encode(), encoded.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            raise ValueError("Invalid Outlook sign-in state")
+        payload = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
+        if abs(time.time() - int(payload["issued"])) > 600:
+            raise ValueError("Outlook sign-in expired. Please try again")
+        token_endpoint = "https://login.microsoftonline.com/" + quote(config["tenant_id"], safe="") + "/oauth2/v2.0/token"
+        token = outlook_graph_post(token_endpoint, {
+            "client_id": config["client_id"], "client_secret": config["client_secret"],
+            "grant_type": "authorization_code", "code": code,
+            "redirect_uri": config["redirect_uri"],
+            "scope": "openid profile User.Read Mail.ReadWrite",
+        }, {"Content-Type": "application/x-www-form-urlencoded"})
+        if not token.get("access_token"):
+            raise RuntimeError("Microsoft 365 did not return an access token")
+        draft = outlook_graph_post("https://graph.microsoft.com/v1.0/me/messages", {
+            "subject": payload["subject"],
+            "body": {"contentType": "Text", "content": payload["body"]},
+            "toRecipients": [{"emailAddress": {"address": payload["to"]}}],
+            "ccRecipients": [{"emailAddress": {"address": payload["cc"]}}],
+        }, {"Content-Type": "application/json", "Authorization": "Bearer " + token["access_token"]})
+        st.session_state["outlook_ready_draft"] = draft.get("webLink")
+        if not st.session_state["outlook_ready_draft"]:
+            raise RuntimeError("Draft saved in Outlook but its link was not returned; check Drafts in Outlook")
+    except Exception as exc:
+        st.session_state["outlook_draft_error"] = str(exc)
+    finally:
+        # Remove temporary authorization code from the browser address bar.
+        st.query_params.clear()
+        st.rerun()
+
+
 def go_home():
     st.session_state.page = "home"
     st.session_state.report_type = None
@@ -420,6 +504,15 @@ if "report_type" not in st.session_state:
     st.session_state.report_type = None
 if "selected_item" not in st.session_state:
     st.session_state.selected_item = None
+
+_outlook_config = outlook_graph_config()
+if _outlook_config:
+    outlook_finish_auth(_outlook_config)
+if st.session_state.pop("outlook_draft_error", None):
+    st.error("Outlook draft could not be created. Check Microsoft 365 permissions and try again.")
+if st.session_state.get("outlook_ready_draft"):
+    st.success("Outlook draft created with the correct To, CC, subject and message. Open it to review and send.")
+    st.link_button("Open my Outlook draft", st.session_state["outlook_ready_draft"], use_container_width=True)
 
 st.markdown(f"""
 <div class="rss-header">
@@ -582,18 +675,25 @@ elif st.session_state.page == "item_detail":
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
             email_body = "Hello, I think this item belongs to me. The color of my item is: "
 
-        # Outlook Web compose links can lose prefilled fields during Microsoft 365 login
-        # or tenant redirects. Keep a copyable draft visible as a reliable fallback.
-        email_cc = "" if is_lost_item else "1730@rawdalsaleheen.edu.kw"
-        compose_params = {"to": str(contact_email), "subject": email_subject, "body": email_body}
-        if email_cc:
-            compose_params["cc"] = email_cc
-        mail_href = "https://outlook.office.com/mail/0/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
-        st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
-        st.caption("Opens Outlook on the web using your RSS school account.")
-        if email_cc:
-            st.info("Before sending, add **1730@rawdalsaleheen.edu.kw** in the **Cc** field in Outlook.")
-            st.code(email_cc, language=None)
+        email_cc = "1730@rawdalsaleheen.edu.kw" if not is_lost_item else ""
+        if email_cc and _outlook_config:
+            # Creates a real draft in the student's OWN school mailbox. CC is
+            # a proper ccRecipients field, not an unsupported URL parameter.
+            auth_url = outlook_auth_url({
+                "to": str(contact_email).strip(), "cc": email_cc,
+                "subject": email_subject, "body": email_body,
+            }, _outlook_config)
+            st.markdown('<a class="detail-email-button" href="' + html.escape(auth_url, quote=True) + '">' + mail_svg + 'Prepare Email in Outlook</a>', unsafe_allow_html=True)
+            st.caption("Sign in with your RSS school account. Outlook will create a draft with To, CC, subject and message ready for you to review and send.")
+        else:
+            # Fallback is intentionally honest: Outlook's basic web link does
+            # NOT reliably set actual CC. Keep the existing working link.
+            compose_params = {"to": str(contact_email).strip(), "subject": email_subject, "body": email_body}
+            mail_href = "https://outlook.office.com/mail/0/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
+            st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
+            if email_cc:
+                st.warning("Automatic CC needs a one-time Microsoft 365 setup by the school. Until it is enabled, please add 1730@rawdalsaleheen.edu.kw in Outlook's CC field before sending.")
+                st.code(email_cc, language=None)
         with st.expander("Email not filled in? Copy the details here", expanded=False):
             st.markdown("**To**")
             st.code(str(contact_email), language=None)
@@ -604,7 +704,6 @@ elif st.session_state.page == "item_detail":
             st.code(email_subject, language=None)
             st.markdown("**Message**")
             st.code(email_body, language=None)
-            st.caption("Use the copy icon beside each field to paste it into Outlook if necessary.")
 
     if contact_email:
         with st.expander("Administrator · Item Returned?", expanded=False):
