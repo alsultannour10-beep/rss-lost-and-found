@@ -575,15 +575,15 @@ elif st.session_state.page == "item_detail":
         st.markdown("### I Found This Item" if is_lost_item else "### Contact the Finder")
         if is_lost_item:
             st.markdown('<p class="detail-intro">Found this item? Contact the student using your RSS school email.</p>', unsafe_allow_html=True)
-            mail_href = "mailto:" + quote(contact_email, safe="@")
+            mail_href = "https://outlook.office.com/mail/deeplink/compose?" + urlencode({"to": contact_email}, quote_via=quote)
         else:
             st.markdown('<p class="detail-intro">Think this is yours? Email the finder and mention your item&#39;s color to help confirm ownership.</p>', unsafe_allow_html=True)
-            mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode({"cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
+            mail_href = "https://outlook.office.com/mail/deeplink/compose?" + urlencode({"to": contact_email, "cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
         st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
         if is_lost_item:
-            st.markdown('<p class="detail-note">Opens your email app with the student&#39;s email address.</p>', unsafe_allow_html=True)
+            st.markdown('<p class="detail-note">Opens Outlook with the student&#39;s email address.</p>', unsafe_allow_html=True)
         else:
-            st.markdown('<p class="detail-note">Opens your email app with the message and CC address automatically filled in.</p>', unsafe_allow_html=True)
+            st.markdown('<p class="detail-note">Opens Outlook with the message and CC address automatically filled in.</p>', unsafe_allow_html=True)
 
     if contact_email:
         with st.expander("Administrator · Item Returned?", expanded=False):
