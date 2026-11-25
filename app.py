@@ -675,7 +675,7 @@ elif st.session_state.page == "item_detail":
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
             email_body = "Hello, I think this item belongs to me. The color of my item is: "
 
-        email_cc = "1730@rawdalsaleheen.edu.kw" if not is_lost_item else ""
+        email_cc = "1730@rawdalsaleheen.edu.kw"
         if email_cc and _outlook_config:
             # Creates a real draft in the student's OWN school mailbox. CC is
             # a proper ccRecipients field, not an unsupported URL parameter.
