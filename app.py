@@ -582,15 +582,17 @@ elif st.session_state.page == "item_detail":
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
             email_body = "Hello, I think this item belongs to me. The color of my item is: "
 
-        # Outlook Web compose links can lose prefilled fields during Microsoft 365 login
-        # or tenant redirects. Keep a copyable draft visible as a reliable fallback.
+        # Use a standard mailto draft so the device's default email app (Outlook
+        # when configured as the default) receives the recipient and the CC.
+        # Outlook Web deep-link compose does not reliably support CC and can
+        # duplicate recipients when redirected during sign-in.
         email_cc = "" if is_lost_item else "1730@rawdalsaleheen.edu.kw"
-        compose_params = {"to": str(contact_email), "subject": email_subject, "body": email_body}
+        compose_params = {"subject": email_subject, "body": email_body}
         if email_cc:
             compose_params["cc"] = email_cc
-        mail_href = "https://outlook.office.com/mail/0/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
-        st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
-        st.caption("Opens Outlook on the web. Sign in with your RSS school account first. Some Outlook sign-in redirects may clear the prepared email.")
+        mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode(compose_params, quote_via=quote)
+        st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
+        st.caption("Opens a prepared email in your device's default mail app. Set Microsoft Outlook as the default email app to use Outlook. Check the To and CC fields before sending.")
         with st.expander("Email not filled in? Copy the details here", expanded=False):
             st.markdown("**To**")
             st.code(str(contact_email), language=None)
