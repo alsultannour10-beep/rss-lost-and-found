@@ -669,7 +669,11 @@ elif st.session_state.page == "item_detail":
         if is_lost_item:
             st.markdown('<p class="detail-intro">Found this item? Contact the student using your RSS school email.</p>', unsafe_allow_html=True)
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
-            email_body = "Hello, I found an item that may belong to you. Please email me the color of your bottle to help confirm it is yours."
+            email_body = ("Hello, I found an item that may belong to you. "
+                          "Please email me the color of your bottle to help confirm it is yours."
+                          if "bottle" in str(item.get("ItemName", "")).lower()
+                          else "Hello, I found an item that may belong to you. "
+                               "Please email me the color of your item to help confirm it is yours.")
         else:
             st.markdown('<p class="detail-intro">Think this is yours? Email the finder and mention your item&#39;s color to help confirm ownership.</p>', unsafe_allow_html=True)
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
@@ -855,7 +859,7 @@ elif st.session_state.page == "form":
         if report_type == "Found":
             st.info("Please do not mention the item's color in its name or description. Keep it private to help verify ownership.")
         item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
-        description = st.text_area("Description *", placeholder="Describe the brand, size, or other details, without mentioning the color." if report_type == "Found" else "Describe the item: color, brand, size, or any detail that can help identify it.", height=100)
+        description = st.text_area("Description *", placeholder="Describe the item, including its brand, size, or other useful details.", height=100)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
         photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.") if report_type == "Lost" else None
