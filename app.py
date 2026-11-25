@@ -575,15 +575,33 @@ elif st.session_state.page == "item_detail":
         st.markdown("### I Found This Item" if is_lost_item else "### Contact the Finder")
         if is_lost_item:
             st.markdown('<p class="detail-intro">Found this item? Contact the student using your RSS school email.</p>', unsafe_allow_html=True)
-            mail_href = "https://outlook.office.com/mail/deeplink/compose?" + urlencode({"to": contact_email}, quote_via=quote)
+            email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
+            email_body = "Hello, I found an item that may belong to you. Please contact me to arrange its return."
         else:
             st.markdown('<p class="detail-intro">Think this is yours? Email the finder and mention your item&#39;s color to help confirm ownership.</p>', unsafe_allow_html=True)
-            mail_href = "https://outlook.office.com/mail/deeplink/compose?" + urlencode({"to": contact_email, "cc": "1730@rawdalsaleheen.edu.kw", "subject": "RSS Lost & Found - " + str(item["ItemName"]), "body": "Hello, I think this item belongs to me. The color of my item is: "}, quote_via=quote)
-        st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
-        if is_lost_item:
-            st.markdown('<p class="detail-note">Opens Outlook with the student&#39;s email address.</p>', unsafe_allow_html=True)
-        else:
-            st.markdown('<p class="detail-note">Opens Outlook with the message and CC address automatically filled in.</p>', unsafe_allow_html=True)
+            email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
+            email_body = "Hello, I think this item belongs to me. The color of my item is: "
+
+        # Outlook Web compose links can lose prefilled fields during Microsoft 365 login
+        # or tenant redirects. Keep a copyable draft visible as a reliable fallback.
+        email_cc = "" if is_lost_item else "1730@rawdalsaleheen.edu.kw"
+        compose_params = {"to": str(contact_email), "subject": email_subject, "body": email_body}
+        if email_cc:
+            compose_params["cc"] = email_cc
+        mail_href = "https://outlook.office.com/mail/0/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
+        st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
+        st.caption("Opens Outlook on the web. Sign in with your RSS school account first. Some Outlook sign-in redirects may clear the prepared email.")
+        with st.expander("Email not filled in? Copy the details here", expanded=False):
+            st.markdown("**To**")
+            st.code(str(contact_email), language=None)
+            if email_cc:
+                st.markdown("**CC**")
+                st.code(email_cc, language=None)
+            st.markdown("**Subject**")
+            st.code(email_subject, language=None)
+            st.markdown("**Message**")
+            st.code(email_body, language=None)
+            st.caption("Use the copy icon beside each field to paste it into Outlook if necessary.")
 
     if contact_email:
         with st.expander("Administrator · Item Returned?", expanded=False):
