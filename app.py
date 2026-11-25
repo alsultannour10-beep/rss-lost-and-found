@@ -692,7 +692,7 @@ elif st.session_state.page == "item_detail":
             mail_href = "https://outlook.office.com/mail/0/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
             st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
             if email_cc:
-                st.info("Please add 1730@rawdalsaleheen.edu.kw in Outlook's CC field before sending.")
+                st.info("Please add the email below in Outlook's CC field before sending ↓")
                 st.code(email_cc, language=None)
         with st.expander("Email not filled in? Copy the details here", expanded=False):
             st.markdown("**To**")
