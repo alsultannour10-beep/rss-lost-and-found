@@ -584,13 +584,16 @@ elif st.session_state.page == "item_detail":
 
         # Outlook Web compose links can lose prefilled fields during Microsoft 365 login
         # or tenant redirects. Keep a copyable draft visible as a reliable fallback.
-        email_cc = "1730@rawdalsaleheen.edu.kw"
+        email_cc = "" if is_lost_item else "1730@rawdalsaleheen.edu.kw"
         compose_params = {"to": str(contact_email), "subject": email_subject, "body": email_body}
         if email_cc:
             compose_params["cc"] = email_cc
         mail_href = "https://outlook.office.com/mail/0/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
         st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
-        st.caption("Opens Outlook on the web. Sign in with your RSS school account first. Some Outlook sign-in redirects may clear the prepared email.")
+        st.caption("Opens Outlook on the web using your RSS school account.")
+        if email_cc:
+            st.info("Before sending in Outlook, click **Cc** and add the school address below. Outlook Web cannot automatically fill Cc from this website link.")
+            st.code(email_cc, language=None)
         with st.expander("Email not filled in? Copy the details here", expanded=False):
             st.markdown("**To**")
             st.code(str(contact_email), language=None)
