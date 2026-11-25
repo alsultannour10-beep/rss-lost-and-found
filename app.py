@@ -669,7 +669,7 @@ elif st.session_state.page == "item_detail":
         if is_lost_item:
             st.markdown('<p class="detail-intro">Found this item? Contact the student using your RSS school email.</p>', unsafe_allow_html=True)
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
-            email_body = "Hello, I found an item that may belong to you. Please contact me to arrange its return."
+            email_body = "Hello, I found an item that may belong to you. Please email me the color of your bottle to help confirm it is yours."
         else:
             st.markdown('<p class="detail-intro">Think this is yours? Email the finder and mention your item&#39;s color to help confirm ownership.</p>', unsafe_allow_html=True)
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
