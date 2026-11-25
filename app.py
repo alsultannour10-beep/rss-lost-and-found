@@ -592,7 +592,7 @@ elif st.session_state.page == "item_detail":
         st.markdown('<a class="detail-email-button" target="_blank" rel="noopener noreferrer" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
         st.caption("Opens Outlook on the web using your RSS school account.")
         if email_cc:
-            st.info("Before sending in Outlook, click **Cc** and add the school address below. Outlook Web cannot automatically fill Cc from this website link.")
+            st.info("Before sending, add **1730@rawdalsaleheen.edu.kw** in the **Cc** field in Outlook.")
             st.code(email_cc, language=None)
         with st.expander("Email not filled in? Copy the details here", expanded=False):
             st.markdown("**To**")
