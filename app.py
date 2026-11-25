@@ -582,28 +582,28 @@ elif st.session_state.page == "item_detail":
             email_subject = "RSS Lost & Found - " + str(item.get("ItemName", "Item"))
             email_body = "Hello, I think this item belongs to me. The color of my item is: "
 
-        # Use a standard mailto draft so the device's default email app (Outlook
-        # when configured as the default) receives the recipient and the CC.
-        # Outlook Web deep-link compose does not reliably support CC and can
-        # duplicate recipients when redirected during sign-in.
+        # Open Outlook Web directly. Place the finder/student in the To field
+        # exactly once. Outlook Web may ignore the CC query parameter; keep
+        # the CC conspicuous and copyable rather than claiming it is guaranteed.
         email_cc = "" if is_lost_item else "1730@rawdalsaleheen.edu.kw"
-        compose_params = {"subject": email_subject, "body": email_body}
+        compose_params = {"to": contact_email, "subject": email_subject, "body": email_body}
         if email_cc:
             compose_params["cc"] = email_cc
-        mail_href = "mailto:" + quote(contact_email, safe="@") + "?" + urlencode(compose_params, quote_via=quote)
-        st.markdown('<a class="detail-email-button" href="' + html.escape(mail_href, quote=True) + '">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + '</a>', unsafe_allow_html=True)
-        st.caption("Opens a prepared email in your device's default mail app. Set Microsoft Outlook as the default email app to use Outlook. Check the To and CC fields before sending.")
+        outlook_href = "https://outlook.office.com/mail/deeplink/compose?" + urlencode(compose_params, quote_via=quote)
+        st.markdown('<a class="detail-email-button" href="' + html.escape(outlook_href, quote=True) + '" target="_blank" rel="noopener noreferrer">' + mail_svg + 'Email the ' + ('Student' if is_lost_item else 'Finder') + ' in Outlook</a>', unsafe_allow_html=True)
+        if email_cc:
+            st.info("CC required: 1730@rawdalsaleheen.edu.kw — please check the CC field in Outlook before sending. If it is empty, add this address manually.")
+        st.caption("Opens an Outlook Web draft with the recipient, subject, and message. Outlook might not fill the CC field automatically.")
         with st.expander("Email not filled in? Copy the details here", expanded=False):
             st.markdown("**To**")
             st.code(str(contact_email), language=None)
             if email_cc:
-                st.markdown("**CC**")
+                st.markdown("**CC — add in Outlook if missing**")
                 st.code(email_cc, language=None)
             st.markdown("**Subject**")
             st.code(email_subject, language=None)
             st.markdown("**Message**")
             st.code(email_body, language=None)
-            st.caption("Use the copy icon beside each field to paste it into Outlook if necessary.")
 
     if contact_email:
         with st.expander("Administrator · Item Returned?", expanded=False):
