@@ -523,7 +523,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 if st.session_state.page == "home":
-    st.markdown('<div class="choice-title">What would you like to do?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="choice-title">How can I help you today?</div>', unsafe_allow_html=True)
     if st.button("I LOST AN ITEM", use_container_width=True):
         st.session_state.page = "found_items"
         st.rerun()
