@@ -856,8 +856,7 @@ elif st.session_state.page == "form":
             location = location_choice or ""
 
     with st.form("rss_report_form", clear_on_submit=False):
-        if report_type == "Found":
-            st.info("Please do not mention the item's color in its name or description. Keep it private to help verify ownership.")
+        st.info("Do NOT include the item's color in its name or description. The color must stay private so the owner can confirm it by email.")
         item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
         description = st.text_area("Description *", placeholder="Describe the item, including its brand, size, or other useful details.", height=100)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
