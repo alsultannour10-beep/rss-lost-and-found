@@ -840,9 +840,9 @@ elif st.session_state.page == "form":
             location = location_choice or ""
 
     with st.form("rss_report_form", clear_on_submit=False):
-        st.info("Do NOT include the item's color in its name or description. The color must stay private so the owner can confirm it by email.")
-        item_name = st.text_input("Item name *", placeholder="What item was lost or found?")
-        description = st.text_area("Description *", placeholder="Describe the item, including its brand, size, or other useful details.", height=100)
+        st.warning("For safety and ownership verification, do NOT mention any colors in the item name or description. Keep the color private so only the rightful owner can confirm it by email.")
+        item_name = st.text_input("Item name *", placeholder="Item name (do not include color)")
+        description = st.text_area("Description *", placeholder="Brand, size, or other useful details — DO NOT include any colors.", height=100)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
         photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Photos are automatically converted to black and white to keep the color private.")
