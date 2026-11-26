@@ -1,3 +1,4 @@
+from PIL import Image, ImageOps
 import streamlit as st
 import pandas as pd
 from datetime import date, datetime
@@ -327,34 +328,17 @@ def load_reports():
         if column not in df.columns:
             df[column] = ""
 
-    # Remove the old water-bottle demonstration record from the visible dataset.
-    item = df["ItemName"].astype(str).str.strip().str.lower()
-    building = df["Building"].astype(str).str.strip().str.lower()
-    location = df["Location"].astype(str).str.strip().str.lower()
-    class_name = df["Class"].astype(str).str.strip().str.lower()
-    description = df["Description"].astype(str).str.strip().str.lower()
-    legacy_test = (
-        item.eq("water bottle")
-        & building.eq("girls building")
-        & (location.eq("11k") | class_name.eq("11k"))
-    )
-    if legacy_test.any():
-        df = df.loc[~legacy_test].copy()
-        # Also clean the CSV when it is writable, so the test record stays gone.
-        try:
-            df[REPORT_COLUMNS].to_csv(DATA_FILE, index=False)
-        except OSError:
-            pass
-
     return df[REPORT_COLUMNS]
 
 
 def save_report(report, uploaded_photo):
     if uploaded_photo is not None:
-        ext = Path(uploaded_photo.name).suffix.lower()
-        image_name = f"{uuid.uuid4().hex}{ext}"
+        image_name = f"{uuid.uuid4().hex}.png"
         image_path = IMAGE_DIR / image_name
-        image_path.write_bytes(uploaded_photo.getbuffer())
+        with Image.open(uploaded_photo) as original:
+            gray = ImageOps.grayscale(ImageOps.exif_transpose(original))
+            gray.info.clear()
+            gray.save(image_path, format="PNG")
         report["Photo"] = str(image_path)
     else:
         report["Photo"] = ""
@@ -623,8 +607,9 @@ elif st.session_state.page == "item_detail":
     st.markdown(f'<div class="detail-heading">{html.escape(str(item.get("ItemName", "Item")))}</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="detail-subheading">{"Missing item details" if is_lost_item else "Found item details"}</div>', unsafe_allow_html=True)
     photo_path = item.get("Photo", "")
-    if is_lost_item and photo_path and Path(photo_path).exists():
-        st.image(photo_path, use_container_width=True)
+    if photo_path and Path(photo_path).exists():
+        with Image.open(photo_path) as original:
+            st.image(ImageOps.grayscale(ImageOps.exif_transpose(original)), use_container_width=True)
 
     place_label = "Last seen at" if is_lost_item else "Found at"
     date_label = "Date lost" if is_lost_item else "Date found"
@@ -860,7 +845,7 @@ elif st.session_state.page == "form":
         description = st.text_area("Description *", placeholder="Describe the item, including its brand, size, or other useful details.", height=100)
         event_date = st.date_input(f"Date it was {action} *", value=date.today(), max_value=date.today())
         email = st.text_input("Your RSS email *", placeholder="Email e.g. 1730@rawdalsaleheen.edu.kw", help="Write your RSS email here. It is required so someone can contact you through Outlook. Your name is not displayed.")
-        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Upload a clear photo of the item if you have one.") if report_type == "Lost" else None
+        photo = st.file_uploader("Photo (optional)", type=["png", "jpg", "jpeg"], help="Photos are automatically converted to black and white to keep the color private.")
         submitted = st.form_submit_button("Submit Report", use_container_width=True)
 
         if submitted:
@@ -887,9 +872,13 @@ elif st.session_state.page == "form":
                     "Photo": "",
                     "SubmittedAt": datetime.now().isoformat(timespec="seconds"),
                 }
-                save_report(report, photo)
-                st.session_state.page = "success"
-                st.rerun()
+                try:
+                    save_report(report, photo)
+                except (OSError, ValueError, Image.DecompressionBombError):
+                    st.error("Could not save the report. Please check your photo or try again.")
+                else:
+                    st.session_state.page = "success"
+                    st.rerun()
 
     if st.button("Back", use_container_width=True):
         go_home()
