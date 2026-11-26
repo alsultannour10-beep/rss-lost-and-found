@@ -541,7 +541,7 @@ if st.session_state.page == "home":
                 st.session_state.page = "found_items"
                 st.rerun()
         with missing_column:
-            if st.button("Missing Items", use_container_width=True):
+            if st.button("Lost Items", use_container_width=True):
                 st.session_state.page = "missing_items"
                 st.rerun()
 
